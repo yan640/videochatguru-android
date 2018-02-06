@@ -3,23 +3,31 @@ package co.netguru.android.chatandroll.feature.main.video
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
+import android.content.Context
+import android.content.Context.WIFI_SERVICE
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.view.View
 import android.view.animation.OvershootInterpolator
+import android.widget.Toast
 import co.netguru.android.chatandroll.R
+import co.netguru.android.chatandroll.R.id.*
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
+import co.netguru.android.chatandroll.feature.main.MainActivity
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
+import org.webrtc.ContextUtils.getApplicationContext
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
@@ -33,7 +41,16 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
-        private val NECESSARY_PERMISSIONS = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+        private val NECESSARY_PERMISSIONS = arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.WAKE_LOCK,
+                Manifest.permission.KILL_BACKGROUND_PROCESSES,
+                Manifest.permission.SEND_SMS,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.GET_ACCOUNTS )
         private const val CONNECT_BUTTON_ANIMATION_DURATION_MS = 500L
     }
 
@@ -58,8 +75,13 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             initAlreadyRunningConnection()
         }
         connectButton.setOnClickListener {
-            checkPermissionsAndConnect()
+            getPresenter().connect()
         }
+        PairButton.setOnClickListener {
+            GetWifi()
+        }
+
+
 
         disconnectButton.setOnClickListener {
             getPresenter().disconnectByUser()
@@ -81,6 +103,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     override fun onStart() {
         super.onStart()
         service?.hideBackgroundWorkWarning()
+        checkPermissionsAndConnect()
     }
 
     override fun onStop() {
@@ -172,6 +195,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         remoteVideoView.visibility = View.VISIBLE
         localVideoView.visibility = View.VISIBLE
         connectButton.visibility = View.GONE
+        PairButton.visibility = View.GONE
     }
 
     override fun showStartRouletteView() {
@@ -179,6 +203,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         remoteVideoView.visibility = View.GONE
         localVideoView.visibility = View.GONE
         connectButton.visibility = View.VISIBLE
+        PairButton.visibility = View.VISIBLE
     }
 
     override fun showErrorWhileChoosingRandom() {
@@ -241,10 +266,30 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private fun checkPermissionsAndConnect() {
         if (context.areAllPermissionsGranted(*NECESSARY_PERMISSIONS)) {
-            getPresenter().connect()
+
         } else {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
+            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WAKE_LOCK,
+                    Manifest.permission.KILL_BACKGROUND_PROCESSES,
+                    Manifest.permission.SEND_SMS,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.GET_ACCOUNTS
+
+                    ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
         }
+    }
+    private fun GetWifi() {
+
+        val wm:WifiManager=context.getSystemService(Context.WIFI_SERVICE)  as WifiManager
+        val wifiList=wm.connectionInfo
+
+        val bssid = wifiList.bssid
+        bssid?.let{
+            Toast.makeText(context, "wifiList.ssid: ${wifiList.bssid}", Toast.LENGTH_LONG).show()
+        }?:Toast.makeText(context,"Connect phones to one Wifi! ", Toast.LENGTH_LONG).show()
+
+
     }
 
     private fun showNoPermissionsSnackbar() {

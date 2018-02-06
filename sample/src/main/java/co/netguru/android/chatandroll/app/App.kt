@@ -56,7 +56,7 @@ class App : Application() {
             //Enables WebRTC Logging
             enableWebRtcLogs(true)
             enableInternalWebRtclogs(Logging.Severity.LS_INFO)
-            Toast.makeText(this, "Uuid: ${App.CURRENT_DEVICE_UUID}", Toast.LENGTH_LONG).show()
+           // Toast.makeText(this, "Uuid: ${App.CURRENT_DEVICE_UUID}", Toast.LENGTH_LONG).show()
         } else {
             disableWebRtcLogs()
         }
@@ -69,7 +69,7 @@ class App : Application() {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID,
                     getString(R.string.background_work_notifications_channel),
-                    NotificationManagerCompat.IMPORTANCE_HIGH)
+                    NotificationManager.IMPORTANCE_HIGH)
                     .apply {
                         description = getString(R.string.background_work_notification_channel_description)
                     }
