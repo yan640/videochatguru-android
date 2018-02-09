@@ -1,6 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import co.netguru.android.chatandroll.common.util.RxUtils
+import co.netguru.android.chatandroll.data.firebase.FirebasePairingWifi
 import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingDisconnect
 import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingOnline
 import co.netguru.android.chatandroll.feature.base.BasePresenter
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 class VideoFragmentPresenter @Inject constructor(
         private val firebaseSignalingOnline: FirebaseSignalingOnline,
-        private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect
+        private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
+        private val firebasePairingWifi: FirebasePairingWifi
 ) : BasePresenter<VideoFragmentView>() {
 
     private val disposables = CompositeDisposable()
@@ -53,6 +55,32 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
+
+    fun startWifiPair(CURRENT_WIFI_BSSID: String) {
+        disposables += firebasePairingWifi.connect()
+                .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice(CURRENT_WIFI_BSSID))
+                .compose(RxUtils.applyMaybeIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d("Next $it")
+                            getView()?.showCamViews()
+                            getView()?.connectTo(it)
+                        },
+                        onError = {
+                            Timber.e(it, "Error while choosing random")
+                            getView()?.showErrorWhileChoosingRandom()
+                        },
+                        onComplete = {
+                            Timber.d("Done")
+                            getView()?.showCamViews()
+                            getView()?.showNoOneAvailable()
+                        }
+                )
+
+    }
+
+
+
     fun listenForDisconnectOrders() {
         disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
                 .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
@@ -86,6 +114,12 @@ class VideoFragmentPresenter @Inject constructor(
         attachService()
         showLookingForPartnerMessage()
         hideConnectButtonWithAnimation()
+    }
+
+    fun createWifiGroup() = getView()?.run {
+        attachServiceWifi()
+        showLookingForPartnerMessage()
+        //hideConnectButtonWithAnimation()
     }
 
     fun disconnectByUser() {

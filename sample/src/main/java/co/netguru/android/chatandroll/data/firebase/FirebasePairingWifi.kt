@@ -22,11 +22,11 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
     private fun deviceOnlinePath(deviceUuid: String) = PAIRE_DEVICES_PATH.plus(deviceUuid)
 
-    fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {
-        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
+    fun setOnlineAndRetrieveRandomDevice(CURRENT_WIFI_BSSID: String): Maybe<String> = Completable.create {
+        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(CURRENT_WIFI_BSSID))
         with(firebaseOnlineReference) {
             onDisconnect().removeValue()
-            setValue(RouletteConnectionFirebase())
+            setValue(App.CURRENT_DEVICE_UUID)
         }
         it.onComplete()
     }.andThen(chooseRandomDevice())

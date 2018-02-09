@@ -23,6 +23,7 @@ import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
+import co.netguru.android.chatandroll.feature.base.Presenter
 import co.netguru.android.chatandroll.feature.main.MainActivity
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
@@ -38,7 +39,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         val TAG: String = VideoFragment::class.java.name
 
         fun newInstance() = VideoFragment()
-
+        var CURRENT_WIFI_BSSID = ""
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
         private val NECESSARY_PERMISSIONS = arrayOf(
@@ -160,6 +161,22 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
         startAndBindWebRTCService(serviceConnection)
     }
+
+    override fun attachServiceWifi() {
+        getPresenter().startWifiPair(CURRENT_WIFI_BSSID)
+//        serviceConnection = object : ServiceConnection {
+//            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
+//                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
+//
+//            }
+//
+//            override fun onServiceDisconnected(componentName: ComponentName) {
+//                onWebRtcServiceDisconnected()
+//            }
+//        }
+//        startAndBindWebRTCService(serviceConnection)
+    }
+
 
     override fun criticalWebRTCServiceException(throwable: Throwable) {
         unbindService()
@@ -287,10 +304,13 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         val bssid = wifiList.bssid
         bssid?.let{
             Toast.makeText(context, "wifiList.ssid: ${wifiList.bssid}", Toast.LENGTH_LONG).show()
+            CURRENT_WIFI_BSSID= wifiList.bssid
+            getPresenter().createWifiGroup()
         }?:Toast.makeText(context,"Connect phones to one Wifi! ", Toast.LENGTH_LONG).show()
 
 
     }
+
 
     private fun showNoPermissionsSnackbar() {
         view?.let {

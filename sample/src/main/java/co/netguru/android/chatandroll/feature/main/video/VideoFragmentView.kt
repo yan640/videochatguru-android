@@ -10,6 +10,7 @@ interface VideoFragmentView : MvpView {
     fun showStartRouletteView()
     fun disconnect()
     fun attachService()
+    fun attachServiceWifi()
     fun showErrorWhileChoosingRandom()
     fun showNoOneAvailable()
     fun showLookingForPartnerMessage()
