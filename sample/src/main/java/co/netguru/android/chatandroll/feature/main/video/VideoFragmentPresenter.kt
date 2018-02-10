@@ -58,6 +58,7 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun startWifiPair(CURRENT_WIFI_BSSID: String) {
         disposables += firebasePairingWifi.connect()
+                .doOnComplete { listenForDisconnectOrders() }
                 .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice(CURRENT_WIFI_BSSID))
                 .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
@@ -79,7 +80,18 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
-
+    fun listenForIncomePairing() {
+        disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
+                .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
+                .compose(RxUtils.applyFlowableIoSchedulers())
+                .subscribeBy(
+                        onNext = {
+                            Timber.d("Disconnect order")
+                            getView()?.showOtherPartyFinished()
+                            disconnect()
+                        }
+                )
+    }
 
     fun listenForDisconnectOrders() {
         disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()

@@ -52,6 +52,8 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                 val removedSelfValue = availableDevices.remove(App.CURRENT_DEVICE_UUID)
 
                 if (removedSelfValue != null && !availableDevices.isEmpty()) {
+
+
                     lastUuid = deleteRandomDevice(availableDevices)
                     mutableData.value = availableDevices
                 }

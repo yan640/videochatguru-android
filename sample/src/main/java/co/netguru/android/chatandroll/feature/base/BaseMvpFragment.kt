@@ -1,8 +1,8 @@
 package co.netguru.android.chatandroll.feature.base
 
+
 import android.os.Bundle
 import android.view.View
-
 
 abstract class BaseMvpFragment<T : MvpView, out P : Presenter<T>> : BaseFragment() {
 
