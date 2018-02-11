@@ -27,6 +27,7 @@ import co.netguru.android.chatandroll.feature.base.Presenter
 import co.netguru.android.chatandroll.feature.main.MainActivity
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
+import io.reactivex.Maybe
 import kotlinx.android.synthetic.main.fragment_video.*
 import org.webrtc.ContextUtils.getApplicationContext
 import org.webrtc.PeerConnection
@@ -163,7 +164,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun attachServiceWifi() {
-        getPresenter().startWifiPair(CURRENT_WIFI_BSSID)
+        getPresenter().startWifiPair( )
 //        serviceConnection = object : ServiceConnection {
 //            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
 //                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
@@ -213,6 +214,12 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         localVideoView.visibility = View.VISIBLE
         connectButton.visibility = View.GONE
         PairButton.visibility = View.GONE
+    }
+
+    override fun showPairPhones(PairedPhones : Map<String, String>) {
+        Toast.makeText(context, "PairedPhones: ${PairedPhones}", Toast.LENGTH_LONG).show()
+        for (sdf in PairedPhones)
+                    getPresenter().NewPaire(sdf.key)
     }
 
     override fun showStartRouletteView() {

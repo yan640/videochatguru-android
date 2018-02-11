@@ -1,6 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import co.netguru.android.chatandroll.common.util.RxUtils
+import co.netguru.android.chatandroll.data.firebase.FirebaseNewRoom
 import co.netguru.android.chatandroll.data.firebase.FirebasePairingWifi
 import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingDisconnect
 import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingOnline
@@ -18,7 +19,8 @@ import javax.inject.Inject
 class VideoFragmentPresenter @Inject constructor(
         private val firebaseSignalingOnline: FirebaseSignalingOnline,
         private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
-        private val firebasePairingWifi: FirebasePairingWifi
+        private val firebasePairingWifi: FirebasePairingWifi,
+        private val firebaseNewRoom: FirebaseNewRoom
 ) : BasePresenter<VideoFragmentView>() {
 
     private val disposables = CompositeDisposable()
@@ -26,8 +28,6 @@ class VideoFragmentPresenter @Inject constructor(
 
     override fun detachView() {
         super.detachView()
-        disposables.dispose()
-        disconnectOrdersSubscription.dispose()
     }
 
     fun startRoulette() {
@@ -56,16 +56,16 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    fun startWifiPair(CURRENT_WIFI_BSSID: String) {
+    fun startWifiPair( ) {
         disposables += firebasePairingWifi.connect()
                 .doOnComplete { listenForDisconnectOrders() }
-                .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice(CURRENT_WIFI_BSSID))
+                .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice( ))
                 .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
                         onSuccess = {
                             Timber.d("Next $it")
-                            getView()?.showCamViews()
-                            getView()?.connectTo(it)
+                            getView()?.showPairPhones(it)
+
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
@@ -73,12 +73,40 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onComplete = {
                             Timber.d("Done")
-                            getView()?.showCamViews()
+                            // getView()?.showCamViews()
                             getView()?.showNoOneAvailable()
                         }
                 )
 
     }
+
+
+    fun NewPaire(NewPhone : String ) {
+        firebaseNewRoom.connect()
+        firebaseNewRoom.setOnlineAndRetrieveRandomDevice(NewPhone )
+        disconnect()
+//        disposables += firebaseNewRoom.connect()
+//                .doOnComplete(firebaseNewRoom.setOnlineAndRetrieveRandomDevice(NewPhone ))
+//                .compose(RxUtils.applyMaybeIoSchedulers())
+//                .subscribeBy(
+//                        onSuccess = {
+//                            Timber.d("Next $it")
+//                            getView()?.showPairPhones(it)
+//
+//                        },
+//                        onError = {
+//                            Timber.e(it, "Error while choosing random")
+//                            getView()?.showErrorWhileChoosingRandom()
+//                        },
+//                        onComplete = {
+//                            Timber.d("Done")
+//                            // getView()?.showCamViews()
+//                            getView()?.showNoOneAvailable()
+//                        }
+//                )
+
+    }
+
 
     fun listenForIncomePairing() {
         disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()

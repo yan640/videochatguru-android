@@ -13,6 +13,7 @@ import co.netguru.videochatguru.enableInternalWebRtclogs
 import co.netguru.videochatguru.enableWebRtcLogs
 import co.netguru.android.chatandroll.BuildConfig
 import co.netguru.android.chatandroll.R
+import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.FirebaseModule
 import com.squareup.leakcanary.LeakCanary
 import org.webrtc.Logging
@@ -25,8 +26,8 @@ class App : Application() {
     companion object Factory {
 
         val BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID = "background_channel"
-
-        val CURRENT_DEVICE_UUID = UUID.randomUUID().toString()
+        val model = Build.MANUFACTURER +" "+ Build.MODEL
+        var CURRENT_DEVICE_UUID = UUID.randomUUID().toString()
 
         fun get(context: Context): App = context.applicationContext as App
 
@@ -60,7 +61,12 @@ class App : Application() {
         } else {
             disableWebRtcLogs()
         }
-
+        if (SharedPreferences.hasToken(applicationContext)) {
+            CURRENT_DEVICE_UUID = SharedPreferences.getToken(this)
+        } else {
+            SharedPreferences.saveToken(this,UUID.randomUUID().toString())
+            CURRENT_DEVICE_UUID = SharedPreferences.getToken(this)
+        }
         createNotificationChannels()
     }
 

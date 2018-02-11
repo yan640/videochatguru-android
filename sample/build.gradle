@@ -23,6 +23,7 @@ android {
         debug {
             versionNameSuffix "-DEBUG"
             applicationIdSuffix ".debug"
+
         }
         release {
             debuggable false
