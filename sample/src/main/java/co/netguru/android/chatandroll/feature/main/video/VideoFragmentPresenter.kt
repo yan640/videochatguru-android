@@ -1,10 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import co.netguru.android.chatandroll.common.util.RxUtils
-import co.netguru.android.chatandroll.data.firebase.FirebaseNewRoom
-import co.netguru.android.chatandroll.data.firebase.FirebasePairingWifi
-import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingDisconnect
-import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingOnline
+import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -18,6 +15,7 @@ import javax.inject.Inject
 
 class VideoFragmentPresenter @Inject constructor(
         private val firebaseSignalingOnline: FirebaseSignalingOnline,
+        private val firebasePairedOnline: FirebasePairedOnline,
         private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
         private val firebasePairingWifi: FirebasePairingWifi,
         private val firebaseNewRoom: FirebaseNewRoom
@@ -28,6 +26,31 @@ class VideoFragmentPresenter @Inject constructor(
 
     override fun detachView() {
         super.detachView()
+    }
+
+    fun startChildVideo() {
+        disposables += firebasePairedOnline.connect()
+                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders())
+                .doOnComplete { listenForDisconnectOrders() }
+                .andThen(firebasePairedOnline.setOnlineAndRetrieveRandomDevice())
+                .compose(RxUtils.applyMaybeIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d("Next $it")
+                            getView()?.showCamViews()
+                            getView()?.connectTo(it)
+                        },
+                        onError = {
+                            Timber.e(it, "Error while choosing random")
+                            getView()?.showErrorWhileChoosingRandom()
+                        },
+                        onComplete = {
+                            Timber.d("Done")
+                            getView()?.showCamViews()
+                            getView()?.showNoOneAvailable()
+                        }
+                )
+
     }
 
     fun startRoulette() {
