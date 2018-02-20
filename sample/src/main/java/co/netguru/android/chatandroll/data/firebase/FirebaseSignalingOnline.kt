@@ -36,7 +36,7 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
         firebaseDatabase.goOnline()
     }
 
-    private fun chooseRandomDevice(): Maybe<String> = Maybe.create {
+    private fun chooseRandomDevice(): Maybe<String> = Maybe.create { //TODO change chooseRandomDevice()
         var lastUuid: String? = null
 
         firebaseDatabase.getReference(ONLINE_DEVICES_PATH).runTransaction(object : Transaction.Handler {

@@ -153,7 +153,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         serviceConnection = object : ServiceConnection {
             override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
                 onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
-                getPresenter().startChildVideo()
+                getPresenter().startRoulette() //TODO
             }
 
             override fun onServiceDisconnected(componentName: ComponentName) {

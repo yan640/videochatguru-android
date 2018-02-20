@@ -25,14 +25,14 @@ class FirebaseNewRoom @Inject constructor(private val firebaseDatabase: Firebase
     private fun deviceOnlinePath(deviceUuid: String) = PHONE_ROOM.plus(deviceUuid)
     private fun ROOMSPath(deviceUuid: String) = ROOMS
 
-    fun setOnlineAndRetrieveRandomDevice(NewPhone : String)  {
+    fun setOnlineAndRetrieveRandomDevice(NewPhone: String) {
 
-        var firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(  App.CURRENT_DEVICE_UUID))
+        var firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
         with(firebaseOnlineReference) {
 
             setValue(App.CURRENT_DEVICE_UUID)
         }
-        firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath( NewPhone))
+        firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(NewPhone))
         with(firebaseOnlineReference) {
 
             setValue(App.CURRENT_DEVICE_UUID)

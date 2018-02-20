@@ -55,7 +55,7 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun startRoulette() {
         disposables += firebaseSignalingOnline.connect()
-                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders())
+                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
                 .doOnComplete { listenForDisconnectOrders() }
                 .andThen(firebaseSignalingOnline.setOnlineAndRetrieveRandomDevice())
                 .compose(RxUtils.applyMaybeIoSchedulers())
@@ -80,9 +80,9 @@ class VideoFragmentPresenter @Inject constructor(
 
 
     fun startWifiPair( ) {
-        disposables += firebasePairingWifi.connect()
-                .doOnComplete { listenForDisconnectOrders() }
-                .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice( ))
+        disposables += firebasePairingWifi.connect() // Выполняет goOnline, возвр Completable
+                .doOnComplete { listenForDisconnectOrders() }  // слушает добавленные в папку should disconnect Floable, disconn при появлении
+                .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice( )) // TODO change method .setOnlineAndRetrieveRandomDevice( )
                 .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
                         onSuccess = {
@@ -144,7 +144,7 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
-    fun listenForDisconnectOrders() {
+    fun listenForDisconnectOrders() { // TODO будет disconn при любом добавленом в "should_disconnect
         disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
                 .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
                 .compose(RxUtils.applyFlowableIoSchedulers())
