@@ -3,11 +3,14 @@ package co.netguru.android.chatandroll.data.firebase
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
+import co.netguru.android.chatandroll.common.extension.rxSingleValue
+import co.netguru.android.chatandroll.data.model.IceServerFirebase
 import co.netguru.android.chatandroll.data.model.RouletteConnectionFirebase
 import com.google.firebase.database.*
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Maybe
+import io.reactivex.Single
 import io.reactivex.rxkotlin.ofType
 import timber.log.Timber
 import java.security.SecureRandom
@@ -19,13 +22,14 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
 
     companion object {
         private const val ONLINE_DEVICES_PATH = "online_devices/"
-        private const val PHONE_ROOM = "Phone_room/"
+        private const val PHONE_ROOM = "Phone_room"
         private const val ROOMS = "Rooms"
     }
 
     private fun deviceOnlinePath(deviceUuid: String) = ONLINE_DEVICES_PATH.plus(deviceUuid)
     private fun Phone_roomPath(deviceUuid: String) = PHONE_ROOM.plus(deviceUuid)
     private fun ROOMSPath(deviceUuid: String) = ROOMS
+    private val firebaseNewPhoneReference by lazy { firebaseDatabase.getReference(PHONE_ROOM) }
 
     fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {
         val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
@@ -35,6 +39,9 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
         }
         it.onComplete()
     }.andThen(chooseRandomDevice())
+
+    fun getMeNewKey(): Single<String> =   Single.create {it.onSuccess(firebaseNewPhoneReference.push().key)  }
+
 
 
     fun GetRoomId(): Flowable<ChildEventAdded<String>> {

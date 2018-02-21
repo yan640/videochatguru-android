@@ -8,6 +8,7 @@ interface VideoFragmentView : MvpView {
 
     fun connectTo(uuid: String)
     fun showCamViews()
+    fun saveFirebaiseKey(key: String)
     fun showPairPhones(PairedPhones : Map<String, String>)
     fun showStartRouletteView()
     fun disconnect()
