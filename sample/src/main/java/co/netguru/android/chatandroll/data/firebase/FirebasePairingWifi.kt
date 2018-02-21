@@ -1,92 +1,63 @@
 package co.netguru.android.chatandroll.data.firebase
 
 import co.netguru.android.chatandroll.app.App
-import co.netguru.android.chatandroll.data.model.RouletteConnectionFirebase
+import co.netguru.android.chatandroll.common.extension.ChildEventAdded
+import co.netguru.android.chatandroll.common.extension.rxChildEvents
+import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.feature.main.video.VideoFragment
-import com.google.firebase.database.*
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
-import io.reactivex.Maybe
-import timber.log.Timber
-import java.security.SecureRandom
+import io.reactivex.Flowable
+import io.reactivex.rxkotlin.ofType
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Created by yan-c_000 on 06.02.2018.
+ * Rewritten by Gleb 21.02.2018
  */
 @Singleton
 class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: FirebaseDatabase) {
 
     companion object {
-        private const val PAIRE_DEVICES_PATH = "paire_devices/"
+        private const val WIFI_PAIR_DEVICES_PATH = "wifi_pair_devices/"
     }
 
-    private fun deviceOnlinePath(deviceUuid: String) = PAIRE_DEVICES_PATH + deviceUuid
+    private fun deviceOnlinePath(deviceUuid: String) = WIFI_PAIR_DEVICES_PATH + deviceUuid
 
-    fun setOnlineAndRetrieveRandomDevice(): Maybe<Map<String, String>> = Completable.create {
-        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(VideoFragment.CURRENT_WIFI_BSSID + "/" + App.CURRENT_DEVICE_UUID))
+    private val pairingDevicesPath: String
+        get() = WIFI_PAIR_DEVICES_PATH + VideoFragment.CURRENT_WIFI_BSSID
+
+
+    /**
+     * Add you device info to FDB folder [WIFI_PAIR_DEVICES_PATH]/[CURRENT_WIFI_BSSID]
+     */
+    fun addToFolder(): Completable = Completable.create { emitter ->
+        val firebaseOnlineReference = firebaseDatabase.getReference(pairingDevicesPath)
         with(firebaseOnlineReference) {
             onDisconnect().removeValue()
-            setValue(App.model)
+            push().setValue(DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model))
+                    .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }  // TODO удалить listener по завершению
         }
-        it.onComplete()
-    }.andThen(chooseRandomDevice()) // TODO перенести в общую цепочку вызовов
+        emitter.onComplete()
+    }
+
+    /**
+     * Get Flowable with all ready for pairing devices in your wifi
+     */
+    fun checkForWaitingDevices(): Flowable<DeviceInfoFirebase> =
+            firebaseDatabase.getReference(pairingDevicesPath)
+                    .rxChildEvents()
+                    .ofType<ChildEventAdded<DataSnapshot>>()  // TODO возможно возвращает  DeviceInfoFirebase
+                    .map { it.data.getValue(DeviceInfoFirebase::class.java)!! }
 
     fun disconnect(): Completable = Completable.fromAction {
-        firebaseDatabase.goOffline()
+        firebaseDatabase.goOffline()    // TODO нужно где-то использовать
     }
 
     fun connect(): Completable = Completable.fromAction {
         firebaseDatabase.goOnline()
     }
 
-    private fun chooseRandomDevice(): Maybe<Map<String, String>> =
-            Maybe.create {
-                var lastUuid: MutableData? = null
-                var devicesMap: Map<String, String> = HashMap()
-                firebaseDatabase
-                        .getReference(deviceOnlinePath(VideoFragment.CURRENT_WIFI_BSSID))
-                        .runTransaction(object : Transaction.Handler {
-
-                    override fun doTransaction(mutableData: MutableData): Transaction.Result {
-                        lastUuid = null
-                        val genericTypeIndicator = object : GenericTypeIndicator<MutableMap<String, String>>() {}
-                        val availableDevices = mutableData.getValue(genericTypeIndicator)
-                                ?: return Transaction.success(mutableData) //??
-                        val removedSelfValue = availableDevices.remove(App.CURRENT_DEVICE_UUID)
-                        if (removedSelfValue != null && availableDevices.isNotEmpty()) {
-
-                            if (!availableDevices.isEmpty()) {
-                                for (device in availableDevices) {
-                                    devicesMap += device.key to device.value
-                                }
-                            }
-                            mutableData.value = devicesMap
-
-                        }
-
-                        //mutableData.value = availableDevices
-                        return Transaction.success(mutableData)
-                    }
-
-                    private fun deleteRandomDevice(availableDevices: MutableMap<String, RouletteConnectionFirebase>): String {
-                        val devicesCount = availableDevices.count()
-                        val randomDevicePosition = SecureRandom().nextInt(devicesCount)
-                        val randomDeviceToRemoveUuid = availableDevices.keys.toList()[randomDevicePosition]
-                        Timber.d("Device number $randomDevicePosition from $devicesCount devices was chosen.")
-                        availableDevices.remove(randomDeviceToRemoveUuid)
-                        return randomDeviceToRemoveUuid
-                    }
-
-                     override fun onComplete(databaseError: DatabaseError?, completed: Boolean, p2: DataSnapshot?) {
-                        if (databaseError != null) {
-                            it.onError(databaseError.toException())
-                        } else if (completed && devicesMap != null) {
-                            it.onSuccess(devicesMap)
-                            //TODO отправить список всех телефонов (плюс название телфона)
-                        }
-                        it.onComplete()
-                    }
-                })
-            }
 }

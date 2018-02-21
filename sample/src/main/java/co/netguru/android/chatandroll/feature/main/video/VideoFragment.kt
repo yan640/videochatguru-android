@@ -1,14 +1,13 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
-import android.content.Context.WIFI_SERVICE
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.IBinder
@@ -18,25 +17,26 @@ import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import co.netguru.android.chatandroll.R
-import co.netguru.android.chatandroll.R.id.*
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
+import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
-import co.netguru.android.chatandroll.feature.base.Presenter
-import co.netguru.android.chatandroll.feature.main.MainActivity
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
-import io.reactivex.Maybe
 import kotlinx.android.synthetic.main.fragment_video.*
-import org.webrtc.ContextUtils.getApplicationContext
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
-
+@SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
 
-    companion object {
+
+    override fun showReadyToPairDevice(device: DeviceInfoFirebase) {
+        // TODO добавлять устойства в RecyclerView
+    }
+
+    companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
 
         fun newInstance() = VideoFragment()
@@ -52,7 +52,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                 Manifest.permission.ACCESS_NETWORK_STATE,
                 Manifest.permission.ACCESS_WIFI_STATE,
                 Manifest.permission.BLUETOOTH,
-                Manifest.permission.GET_ACCOUNTS )
+                Manifest.permission.GET_ACCOUNTS)
         private const val CONNECT_BUTTON_ANIMATION_DURATION_MS = 500L
     }
 
@@ -80,10 +80,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             getPresenter().connect()
         }
         PairButton.setOnClickListener {
-            GetWifi()
+            pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
         }
-
-
 
         disconnectButton.setOnClickListener {
             getPresenter().disconnectByUser()
@@ -164,7 +162,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun attachServiceWifi() {
-        getPresenter().startWifiPair( )
+        getPresenter().startWifiPair()
 //        serviceConnection = object : ServiceConnection {
 //            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
 //                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
@@ -216,11 +214,11 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         PairButton.visibility = View.GONE
     }
 
-    override fun showPairPhones(PairedPhones : Map<String, String>) {
-        Toast.makeText(context, "PairedPhones: ${PairedPhones}", Toast.LENGTH_LONG).show()
-        for (sdf in PairedPhones)
-                    getPresenter().NewPaire(sdf.key)
-    }
+//    override fun showPairPhones(PairedPhones: Map<String, String>) {
+//        Toast.makeText(context, "PairedPhones: ${PairedPhones}", Toast.LENGTH_LONG).show()
+//        for (sdf in PairedPhones)
+//            getPresenter().NewPaire(sdf.key)
+//    }
 
     override fun showStartRouletteView() {
         buttonPanel.visibility = View.GONE
@@ -230,9 +228,11 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         PairButton.visibility = View.VISIBLE
     }
 
+
     override fun showErrorWhileChoosingRandom() {
         showSnackbarMessage(R.string.error_choosing_random_partner, Snackbar.LENGTH_LONG)
     }
+
 
     override fun showNoOneAvailable() {
         showSnackbarMessage(R.string.msg_no_one_available, Snackbar.LENGTH_LONG)
@@ -300,22 +300,21 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                     Manifest.permission.BLUETOOTH,
                     Manifest.permission.GET_ACCOUNTS
 
-                    ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
+            ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
         }
     }
-    private fun GetWifi() {
 
-        val wm:WifiManager=context.getSystemService(Context.WIFI_SERVICE)  as WifiManager
-        val wifiList=wm.connectionInfo
-
-        val bssid = wifiList.bssid
-        bssid?.let{
-            Toast.makeText(context, "wifiList.ssid: ${wifiList.bssid}", Toast.LENGTH_LONG).show()
-            CURRENT_WIFI_BSSID= wifiList.bssid
-            getPresenter().createWifiGroup()
-        }?:Toast.makeText(context,"Connect phones to one Wifi! ", Toast.LENGTH_LONG).show()
-
-
+    /**
+     * Find pair in same wi-fi
+     */
+    private fun pairViaSameWifi() {
+        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val bssid = wifiManager.connectionInfo.bssid
+        bssid?.let {
+            CURRENT_WIFI_BSSID = it
+            showLookingForPartnerMessage()
+            getPresenter().startWifiPair()
+        } ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
 
 
