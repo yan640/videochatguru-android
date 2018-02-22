@@ -25,6 +25,10 @@ import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
+import org.jetbrains.anko.noButton
+import org.jetbrains.anko.support.v4.alert
+import org.jetbrains.anko.support.v4.toast
+import org.jetbrains.anko.yesButton
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
@@ -32,9 +36,15 @@ import timber.log.Timber
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
 
 
-    override fun showReadyToPairDevice(device: DeviceInfoFirebase) {
-        // TODO добавлять устойства в RecyclerView
+    override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
+        alert("Pair with ${device.name}?") {  //TODO из res.strings
+            yesButton { toast("Paired!") } //TODO добавить устройство в подтвержденные и отключить listener
+            noButton {  }
+        }.show()
     }
+
+
+
 
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
@@ -151,7 +161,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         serviceConnection = object : ServiceConnection {
             override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
                 onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
-                getPresenter().startRoulette() //TODO
+                getPresenter().startConnection() //TODO
             }
 
             override fun onServiceDisconnected(componentName: ComponentName) {
@@ -229,8 +239,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
 
-    override fun showErrorWhileChoosingRandom() {
-        showSnackbarMessage(R.string.error_choosing_random_partner, Snackbar.LENGTH_LONG)
+
+
+    override fun showErrorWhileChoosingForPairing() {
+        showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)
     }
 
 
@@ -316,6 +328,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             getPresenter().startWifiPair()
         } ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
+
+
 
 
     private fun showNoPermissionsSnackbar() {

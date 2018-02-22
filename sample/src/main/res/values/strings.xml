@@ -2,7 +2,7 @@
     <string name="app_name">Chat&amp;Roll</string>
     <string name="leak_canary_display_activity_label">Chat&amp;Roll leaks</string>
 
-    <string name="error_choosing_random_partner">Error occurred while choosing random partner try again later</string>
+    <string name="error_choosing_pairing_device">Error occurred while choosing pairing device try again later</string>
     <string name="error_web_rtc_error">Error occurred while trying to connect to other party</string>
 
     <string name="action_settings">Settings</string>

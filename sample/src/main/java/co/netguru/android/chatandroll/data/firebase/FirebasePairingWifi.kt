@@ -29,6 +29,8 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     private val pairingDevicesPath: String
         get() = WIFI_PAIR_DEVICES_PATH + VideoFragment.CURRENT_WIFI_BSSID
 
+    private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID,App.model)
+
 
     /**
      * Add you device info to FDB folder [WIFI_PAIR_DEVICES_PATH]/[CURRENT_WIFI_BSSID]
@@ -37,7 +39,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         val firebaseOnlineReference = firebaseDatabase.getReference(pairingDevicesPath)
         with(firebaseOnlineReference) {
             onDisconnect().removeValue()
-            push().setValue(DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model))
+            push().setValue(myDevice)
                     .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }  // TODO удалить listener по завершению
         }
         emitter.onComplete()
@@ -51,6 +53,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()  // TODO возможно возвращает  DeviceInfoFirebase
                     .map { it.data.getValue(DeviceInfoFirebase::class.java)!! }
+                    .filter{it!=myDevice}
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()    // TODO нужно где-то использовать

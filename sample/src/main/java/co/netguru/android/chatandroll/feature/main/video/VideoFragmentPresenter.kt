@@ -24,12 +24,13 @@ class VideoFragmentPresenter @Inject constructor(
     private val disposables = CompositeDisposable()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
 
+
     override fun detachView() {
         super.detachView()
     }
 
 
-    fun startRoulette() {
+    fun startConnection() {
         disposables += firebaseSignalingOnline.connect()
                 .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
                 .doOnComplete { listenForDisconnectOrders() }
@@ -43,7 +44,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                         },
                         onComplete = {
                             Timber.d("Done")
@@ -66,12 +67,12 @@ class VideoFragmentPresenter @Inject constructor(
                 .subscribeBy(
                         onNext = {
                             Timber.d("Next $it")
-                            getView()?.showReadyToPairDevice(it)
+                            getView()?.showPairingConfirmationDialog(it)
 
                         },
                         onError = {
                             Timber.e(it, "Error while finding ready for pairing devices")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                         },
                         onComplete = {
                             Timber.d("Done")

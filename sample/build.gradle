@@ -44,6 +44,7 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':videochatguru')
+    compile  "org.jetbrains.anko:anko:0.10.4"
 
     compile libs.appCompat
     compile libs.design
