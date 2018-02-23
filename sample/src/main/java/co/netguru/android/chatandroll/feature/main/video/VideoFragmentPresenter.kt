@@ -84,20 +84,17 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
-    fun confirmPairnigAndWaitForOther(deviceInfoFirebase: DeviceInfoFirebase) {
+    fun confirmPairnigAndWaitForOther(otherDevice: DeviceInfoFirebase) {
         getView()?.hidePairingStatus()
-        disposables += firebaseSignalingOnline.disconnect()
-                .compose(RxUtils.applyCompletableIoSchedulers())
-                .subscribeBy(
-                        onError = {
-                            Timber.d(it)
-                        },
-                        onComplete = {
-                           Timber.i("FDB disconnected!")
+        disposables += firebasePairingWifi.removerThisDeviceFromFolder()
+                .andThen(firebasePairingWifi.addOtherDeviceAsComfirmed(otherDevice))
+                .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
+                .compose(RxUtils.applyFlowableIoSchedulers())
+                .subscribeBy (
+                        onNext = {
+                            Timber.d("You and device ${it.name} paired! ")
                         }
                 )
-
-
     }
 
 
