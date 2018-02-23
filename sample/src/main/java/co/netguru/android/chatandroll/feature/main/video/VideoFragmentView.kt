@@ -21,4 +21,6 @@ interface VideoFragmentView : MvpView {
     fun showConnectedMsg()
     fun showWillTryToRestartMsg()
     fun hideConnectButtonWithAnimation()
+    fun showPairingStatus()
+    fun hidePairingStatus()
 }

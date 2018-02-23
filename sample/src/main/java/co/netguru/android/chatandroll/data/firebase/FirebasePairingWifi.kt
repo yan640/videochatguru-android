@@ -29,7 +29,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     private val pairingDevicesPath: String
         get() = WIFI_PAIR_DEVICES_PATH + VideoFragment.CURRENT_WIFI_BSSID
 
-    private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID,App.model)
+    private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model)
 
 
     /**
@@ -37,10 +37,14 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
      */
     fun addToFolder(): Completable = Completable.create { emitter ->
         val firebaseOnlineReference = firebaseDatabase.getReference(pairingDevicesPath)
-        with(firebaseOnlineReference) {
+        val key = firebaseOnlineReference
+                .push()
+                .key
+        val firebaseOnlineReferenceValue = firebaseOnlineReference.child(key)
+        with(firebaseOnlineReferenceValue) {
             onDisconnect().removeValue()
-            push().setValue(myDevice)
-                    .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }  // TODO удалить listener по завершению
+            setValue(myDevice).addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
+            // TODO удалить listener по завершению
         }
         emitter.onComplete()
     }
@@ -53,7 +57,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()  // TODO возможно возвращает  DeviceInfoFirebase
                     .map { it.data.getValue(DeviceInfoFirebase::class.java)!! }
-                    .filter{it!=myDevice}
+                    .filter { it != myDevice }
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()    // TODO нужно где-то использовать

@@ -27,23 +27,12 @@ import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
 import org.jetbrains.anko.noButton
 import org.jetbrains.anko.support.v4.alert
-import org.jetbrains.anko.support.v4.toast
 import org.jetbrains.anko.yesButton
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
 @SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
-
-
-    override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
-        alert("Pair with ${device.name}?") {  //TODO из res.strings
-            yesButton { toast("Paired!") } //TODO добавить устройство в подтвержденные и отключить listener
-            noButton {  }
-        }.show()
-    }
-
-
 
 
     companion object {  // TODO  переделать на const для эффективности
@@ -89,7 +78,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         connectButton.setOnClickListener {
             getPresenter().connect()
         }
-        PairButton.setOnClickListener {
+        pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
         }
 
@@ -157,6 +146,27 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
     }
 
+    override fun showPairingStatus() {
+        pairButton.isEnabled = false
+        progressBar.visibility = View.VISIBLE
+
+    }
+
+    override fun hidePairingStatus() {
+        pairButton.isEnabled = true
+        progressBar.visibility = View.GONE
+
+    }
+
+
+
+    override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
+        alert("Pair with ${device.name}?") {  //TODO из res.strings
+            yesButton { getPresenter().confirmPairnigAndWaitForOther(device) } //TODO добавить устройство в подтвержденные и отключить listener
+            noButton {  }
+        }.show()
+    }
+
     override fun attachService() {
         serviceConnection = object : ServiceConnection {
             override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
@@ -221,7 +231,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         remoteVideoView.visibility = View.VISIBLE
         localVideoView.visibility = View.VISIBLE
         connectButton.visibility = View.GONE
-        PairButton.visibility = View.GONE
+        pairButton.visibility = View.GONE
     }
 
 //    override fun showPairPhones(PairedPhones: Map<String, String>) {
@@ -235,7 +245,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         remoteVideoView.visibility = View.GONE
         localVideoView.visibility = View.GONE
         connectButton.visibility = View.VISIBLE
-        PairButton.visibility = View.VISIBLE
+        pairButton.visibility = View.VISIBLE
     }
 
 
@@ -319,13 +329,14 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     /**
      * Find pair in same wi-fi
      */
-    private fun pairViaSameWifi() {
+    private fun pairViaSameWifi() { // TODO перенести логику работы в Presenter
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val bssid = wifiManager.connectionInfo.bssid
         bssid?.let {
             CURRENT_WIFI_BSSID = it
             showLookingForPartnerMessage()
             getPresenter().startWifiPair()
+            showPairingStatus() // TODO внести ограничение 60сек на pair после которого отменить поиск
         } ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
 

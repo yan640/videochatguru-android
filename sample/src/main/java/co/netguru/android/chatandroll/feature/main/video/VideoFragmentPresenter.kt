@@ -2,6 +2,7 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
+import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -80,6 +81,22 @@ class VideoFragmentPresenter @Inject constructor(
                             getView()?.showNoOneAvailable()
                         }
                 )
+
+    }
+
+    fun confirmPairnigAndWaitForOther(deviceInfoFirebase: DeviceInfoFirebase) {
+        getView()?.hidePairingStatus()
+        disposables += firebaseSignalingOnline.disconnect()
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onError = {
+                            Timber.d(it)
+                        },
+                        onComplete = {
+                           Timber.i("FDB disconnected!")
+                        }
+                )
+
 
     }
 
