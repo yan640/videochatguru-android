@@ -31,10 +31,10 @@ class FirebaseSignalingDisconnect @Inject constructor(private val firebaseDataba
         }
     }
 
-    fun listenForDisconnectOrders(): Flowable<ChildEventAdded<String>> {
+    fun listenForDisconnectOrders(): Flowable<ChildEventAdded<String>> { // ChildEventAdd<Str> ~ Pair<Str,Str>
         return firebaseDatabase.getReference(deviceDisconnectPath(App.CURRENT_DEVICE_UUID))
                 .rxChildEvents()
-                .ofType<ChildEventAdded<String>>()
+                .ofType<ChildEventAdded<String>>() // фильтрует по типу
     }
 
     fun cleanDisconnectOrders(): Completable = Completable.create {
