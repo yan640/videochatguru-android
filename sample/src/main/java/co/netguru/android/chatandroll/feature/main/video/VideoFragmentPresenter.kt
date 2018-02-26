@@ -1,6 +1,5 @@
 package co.netguru.android.chatandroll.feature.main.video
 
-import android.widget.Toast
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
@@ -33,14 +32,14 @@ class VideoFragmentPresenter @Inject constructor(
         super.detachView()
     }
 
-    fun GetKeyFromFirebase(){
+    fun GetKeyFromFirebase() {
         disposableForRetrieveKey = firebasePairedOnline.connect()
                 .andThen(firebasePairedOnline.getMeNewKey())
                 .compose(RxUtils.applySingleIoSchedulers())
                 .subscribeBy(
                         onSuccess = {
                             Timber.d("Next $it")
-                            App.CURRENT_DEVICE_UUID =it
+                            App.CURRENT_DEVICE_UUID = it
 
                             getView()?.saveFirebaiseKey(it)
                             disposableForRetrieveKey.dispose()
@@ -112,7 +111,7 @@ class VideoFragmentPresenter @Inject constructor(
      */
     fun startWifiPair() {
         disposables += firebasePairingWifi.connect() // check connection to FDB
-                .andThen(firebasePairingWifi.addToFolder())
+                .andThen(firebasePairingWifi.addDeviceToPairingFolder())
                 .andThen(firebasePairingWifi.checkForWaitingDevices())
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
@@ -134,15 +133,16 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
-    fun confirmPairnigAndWaitForOther(otherDevice: DeviceInfoFirebase) {
+    fun confirmPairingAndWaitForOther(otherDevice: DeviceInfoFirebase) {
         getView()?.hidePairingStatus()
         disposables += firebasePairingWifi.removerThisDeviceFromFolder()
-                .andThen(firebasePairingWifi.addOtherDeviceAsComfirmed(otherDevice))
+                .andThen(firebasePairingWifi.addOtherDeviceAsConfirmed(otherDevice))
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .subscribeBy (
-                        onNext = {
-                            Timber.d("You and device ${it.name} paired! ")
+                .flatMapCompletable{ firebasePairingWifi.saveDeviceToRoom(it.roomName) }
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onComplete = {
+                            Timber.d("You and device  paired! ")
                         }
                 )
     }

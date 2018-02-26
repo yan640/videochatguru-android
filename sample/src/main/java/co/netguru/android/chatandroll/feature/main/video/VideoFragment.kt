@@ -31,7 +31,6 @@ import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.yesButton
 import org.webrtc.PeerConnection
 import timber.log.Timber
-import java.util.*
 
 @SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
@@ -182,7 +181,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
         alert("Pair with ${device.name}?") {  //TODO из res.strings
-            yesButton { getPresenter().confirmPairnigAndWaitForOther(device) } //TODO добавить устройство в подтвержденные и отключить listener
+            yesButton { getPresenter().confirmPairingAndWaitForOther(device) } //TODO добавить устройство в подтвержденные и отключить listener
             noButton {  }
         }.show()
     }

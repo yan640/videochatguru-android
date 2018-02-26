@@ -12,10 +12,6 @@ class SharedPreferences {
         private const val TOKEN_KEY = "token"
         private const val USER_ID = "id"
 
-        fun saveOauthCredentials(context: Context, token: String, id: String) {
-            saveToken(context, token)
-            saveUserId(context, id)
-        }
 
         fun removeOauthCredentials(context: Context) {
             PreferenceManager.getDefaultSharedPreferences(context)
@@ -46,12 +42,6 @@ class SharedPreferences {
                     .contains(TOKEN_KEY)
         }
 
-        private fun saveUserId(context: Context, id: String) {
-            PreferenceManager.getDefaultSharedPreferences(context)
-                    .edit()
-                    .putString(USER_ID, id)
-                    .apply()
-        }
 
         fun getUserId(context: Context) : String {
             return PreferenceManager.getDefaultSharedPreferences(context)
