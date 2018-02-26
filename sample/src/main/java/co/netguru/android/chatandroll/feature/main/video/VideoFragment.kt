@@ -22,6 +22,7 @@ import co.netguru.android.chatandroll.R.id.*
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
+import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.feature.base.Presenter
 import co.netguru.android.chatandroll.feature.main.MainActivity
@@ -32,6 +33,7 @@ import kotlinx.android.synthetic.main.fragment_video.*
 import org.webrtc.ContextUtils.getApplicationContext
 import org.webrtc.PeerConnection
 import timber.log.Timber
+import java.util.*
 
 
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
@@ -41,6 +43,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
         fun newInstance() = VideoFragment()
         var CURRENT_WIFI_BSSID = ""
+
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
         private val NECESSARY_PERMISSIONS = arrayOf(
@@ -66,9 +69,26 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override val remoteUuid
         get() = service?.getRemoteUuid()
+    override fun saveFirebaiseKey(key: String){
+        SharedPreferences.saveToken(context,key)
+        App.CURRENT_DEVICE_UUID=key
+        Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
+    }
+
+    private fun checkOrGetMyFirebaiseKey(){
+
+
+        if (SharedPreferences.hasToken(context)) {
+            App.CURRENT_DEVICE_UUID = SharedPreferences.getToken(context)
+        } else {
+            getPresenter().GetKeyFromFirebase()
+
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        checkOrGetMyFirebaiseKey()
         (buttonPanel.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         (localVideoView.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL

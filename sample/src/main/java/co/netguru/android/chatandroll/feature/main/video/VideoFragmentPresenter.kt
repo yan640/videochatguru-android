@@ -1,5 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
+import android.widget.Toast
+import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.feature.base.BasePresenter
@@ -22,10 +24,35 @@ class VideoFragmentPresenter @Inject constructor(
 ) : BasePresenter<VideoFragmentView>() {
 
     private val disposables = CompositeDisposable()
+    private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
 
     override fun detachView() {
         super.detachView()
+    }
+
+    fun GetKeyFromFirebase(){
+        disposableForRetrieveKey = firebasePairedOnline.connect()
+                .andThen(firebasePairedOnline.getMeNewKey())
+                .compose(RxUtils.applySingleIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d("Next $it")
+                            App.CURRENT_DEVICE_UUID =it
+
+                            getView()?.saveFirebaiseKey(it)
+                            disposableForRetrieveKey.dispose()
+//                            getView()?.showCamViews()
+//                            getView()?.connectTo(it)
+                        },
+                        onError = {
+                            Timber.e(it, "Error while choosing random")
+                            getView()?.showErrorWhileChoosingRandom()
+                            disposableForRetrieveKey.dispose()
+                        }
+
+                )
+
     }
 
     fun startChildVideo() {
