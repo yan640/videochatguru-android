@@ -49,7 +49,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                             disposableForRetrieveKey.dispose()
                         }
 
@@ -71,7 +71,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                         },
                         onComplete = {
                             Timber.d("Done")
