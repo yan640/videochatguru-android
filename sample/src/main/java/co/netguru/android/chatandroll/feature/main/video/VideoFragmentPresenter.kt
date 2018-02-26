@@ -4,6 +4,7 @@ import android.widget.Toast
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
+import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -27,6 +28,7 @@ class VideoFragmentPresenter @Inject constructor(
     private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
 
+
     override fun detachView() {
         super.detachView()
     }
@@ -47,7 +49,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                             disposableForRetrieveKey.dispose()
                         }
 
@@ -69,7 +71,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                         },
                         onComplete = {
                             Timber.d("Done")
@@ -77,10 +79,9 @@ class VideoFragmentPresenter @Inject constructor(
                             getView()?.showNoOneAvailable()
                         }
                 )
-
     }
 
-    fun startRoulette() {
+    fun startConnection() {
         disposables += firebaseSignalingOnline.connect()
                 .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
                 .doOnComplete { listenForDisconnectOrders() }
@@ -94,7 +95,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            getView()?.showErrorWhileChoosingForPairing()
                         },
                         onComplete = {
                             Timber.d("Done")
@@ -102,24 +103,27 @@ class VideoFragmentPresenter @Inject constructor(
                             getView()?.showNoOneAvailable()
                         }
                 )
-
     }
 
 
-    fun startWifiPair( ) {
-        disposables += firebasePairingWifi.connect() // Выполняет goOnline, возвр Completable
-                .doOnComplete { listenForDisconnectOrders() }  // слушает добавленные в папку should disconnect Floable, disconn при появлении
-                .andThen(firebasePairingWifi.setOnlineAndRetrieveRandomDevice( )) // TODO change method .setOnlineAndRetrieveRandomDevice( )
-                .compose(RxUtils.applyMaybeIoSchedulers())
+    /**
+     * Add your device to FDB folder "wifi_pair_devices/YOUR_WIFI"
+     * and listen for ready in that folder
+     */
+    fun startWifiPair() {
+        disposables += firebasePairingWifi.connect() // check connection to FDB
+                .andThen(firebasePairingWifi.addToFolder())
+                .andThen(firebasePairingWifi.checkForWaitingDevices())
+                .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
-                        onSuccess = {
+                        onNext = {
                             Timber.d("Next $it")
-                            getView()?.showPairPhones(it)
+                            getView()?.showPairingConfirmationDialog(it)
 
                         },
                         onError = {
-                            Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingRandom()
+                            Timber.e(it, "Error while finding ready for pairing devices")
+                            getView()?.showErrorWhileChoosingForPairing()
                         },
                         onComplete = {
                             Timber.d("Done")
@@ -130,31 +134,17 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
-
-    fun NewPaire(NewPhone : String ) {
-        firebaseNewRoom.connect()
-        firebaseNewRoom.setOnlineAndRetrieveRandomDevice(NewPhone )
-        disconnect()
-//        disposables += firebaseNewRoom.connect()
-//                .doOnComplete(firebaseNewRoom.setOnlineAndRetrieveRandomDevice(NewPhone ))
-//                .compose(RxUtils.applyMaybeIoSchedulers())
-//                .subscribeBy(
-//                        onSuccess = {
-//                            Timber.d("Next $it")
-//                            getView()?.showPairPhones(it)
-//
-//                        },
-//                        onError = {
-//                            Timber.e(it, "Error while choosing random")
-//                            getView()?.showErrorWhileChoosingRandom()
-//                        },
-//                        onComplete = {
-//                            Timber.d("Done")
-//                            // getView()?.showCamViews()
-//                            getView()?.showNoOneAvailable()
-//                        }
-//                )
-
+    fun confirmPairnigAndWaitForOther(otherDevice: DeviceInfoFirebase) {
+        getView()?.hidePairingStatus()
+        disposables += firebasePairingWifi.removerThisDeviceFromFolder()
+                .andThen(firebasePairingWifi.addOtherDeviceAsComfirmed(otherDevice))
+                .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
+                .compose(RxUtils.applyFlowableIoSchedulers())
+                .subscribeBy (
+                        onNext = {
+                            Timber.d("You and device ${it.name} paired! ")
+                        }
+                )
     }
 
 
@@ -204,12 +194,6 @@ class VideoFragmentPresenter @Inject constructor(
         attachService()
         showLookingForPartnerMessage()
         hideConnectButtonWithAnimation()
-    }
-
-    fun createWifiGroup() = getView()?.run {
-        attachServiceWifi()
-        showLookingForPartnerMessage()
-        //hideConnectButtonWithAnimation()
     }
 
     fun disconnectByUser() {

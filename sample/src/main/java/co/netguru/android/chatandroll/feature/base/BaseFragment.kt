@@ -20,6 +20,7 @@ abstract class BaseFragment : Fragment() {
     @LayoutRes
     abstract fun getLayoutId(): Int
 
+
     fun showSnackbarMessage(@StringRes resId: Int, @BaseTransientBottomBar.Duration duration: Int) {
         view?.let {
             val snackbar = Snackbar.make(it, resId, duration)
