@@ -28,7 +28,7 @@ class App : Application() {
         val BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID = "background_channel"
         val model = Build.MANUFACTURER +" "+ Build.MODEL
         var CURRENT_DEVICE_UUID = UUID.randomUUID().toString() // TODO сохранять
-
+        var CURRENT_ROOM_ID = ""
         fun get(context: Context): App = context.applicationContext as App
 
         fun getApplicationComponent(context: Context): ApplicationComponent =

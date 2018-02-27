@@ -18,7 +18,7 @@ class FirebaseSignalingAnswers @Inject constructor(private val firebaseDatabase:
         private const val ANSWERS_PATH = "answers/"
     }
 
-    private fun deviceAnswersPath(deviceUuid: String) = ANSWERS_PATH.plus(deviceUuid)
+    private fun deviceAnswersPath(deviceUuid: String) = "paired_devices/"+App.CURRENT_ROOM_ID +"/"+ ANSWERS_PATH +deviceUuid
 
     fun create(recipientUuid: String, localSessionDescription: SessionDescription): Completable = Completable.create {
         val reference = firebaseDatabase.getReference(deviceAnswersPath(recipientUuid))

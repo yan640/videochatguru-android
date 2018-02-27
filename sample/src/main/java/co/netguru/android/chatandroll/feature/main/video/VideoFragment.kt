@@ -59,7 +59,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     private lateinit var serviceConnection: ServiceConnection
+    override fun showFirebaiseKey(key: String){
 
+        Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
+    }
     override fun getLayoutId() = R.layout.fragment_video
 
     override fun retrievePresenter() = App.getApplicationComponent(context).videoFragmentComponent().videoFragmentPresenter()
@@ -80,7 +83,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (SharedPreferences.hasToken(context)) {
             App.CURRENT_DEVICE_UUID = SharedPreferences.getToken(context)
         } else {
-            getPresenter().GetKeyFromFirebase()
+            getPresenter().getKeyFromFirebase()
 
         }
     }
@@ -96,7 +99,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             initAlreadyRunningConnection()
         }
         connectButton.setOnClickListener {
-            getPresenter().connect()
+            // getPresenter().connect()
+             getPresenter().startChildVideo()
         }
         pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
@@ -203,17 +207,17 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun attachServiceWifi() {
         getPresenter().startWifiPair()
-//        serviceConnection = object : ServiceConnection {
-//            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
-//                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
-//
-//            }
-//
-//            override fun onServiceDisconnected(componentName: ComponentName) {
-//                onWebRtcServiceDisconnected()
-//            }
-//        }
-//        startAndBindWebRTCService(serviceConnection)
+        serviceConnection = object : ServiceConnection {
+            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
+                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
+
+            }
+
+            override fun onServiceDisconnected(componentName: ComponentName) {
+                onWebRtcServiceDisconnected()
+            }
+        }
+        startAndBindWebRTCService(serviceConnection)
     }
 
 

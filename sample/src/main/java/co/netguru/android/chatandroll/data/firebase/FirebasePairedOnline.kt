@@ -22,7 +22,7 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
 
     companion object {
         private const val ONLINE_DEVICES_PATH = "online_devices/"
-        private const val PHONE_ROOM = "Phone_room"
+        private const val PHONE_ROOM = "device_to_room/"
         private const val ROOMS = "Rooms"
     }
 
@@ -43,12 +43,14 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
     fun getMeNewKey(): Single<String> =   Single.create {it.onSuccess(firebaseNewPhoneReference.push().key)  }
 
 
+    fun getRoomId(): Single<String>            =
+            firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
+                    .rxSingleValue()
+                    .map { it.getValue(String::class.java)!! }
 
-    fun GetRoomId(): Flowable<ChildEventAdded<String>> {
-        return firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
-                .rxChildEvents()
-                .ofType<ChildEventAdded<String>>()
-    }
+
+
+
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()

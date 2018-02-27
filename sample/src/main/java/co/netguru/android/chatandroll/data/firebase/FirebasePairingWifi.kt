@@ -31,7 +31,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
     private val pairingDevicesPath: String
         get() = WIFI_PAIRING_PATH + VideoFragment.CURRENT_WIFI_BSSID
-
+    //get() = WIFI_PAIRING_PATH + "TEST_wifi_2"
 
     private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model)
 
@@ -94,11 +94,12 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         return if (yourUuid > otherUuid) yourUuid else otherUuid      // TODO возможноо идет сравение по длине, проверить
     }
 
-    fun addOtherDeviceAsComfirmed(otherDevice: DeviceInfoFirebase):Completable = Completable.create { emitter ->
+    fun addOtherDeviceAsConfirmed(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
+        val roomName = choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid)
         firebaseDatabase.getReference(PAIRED_PATH)
-                .child(choosePairedFolderName(App.CURRENT_DEVICE_UUID,otherDevice.uuid))
+                .child(roomName)
                 .push()
-                .setValue(PairedDevice(otherDevice.uuid,otherDevice.name,"",true))
+                .setValue(PairedDevice(otherDevice.uuid, otherDevice.name, "", roomName, true))
                 .addOnCompleteListener { emitter.onComplete() }
     }
 

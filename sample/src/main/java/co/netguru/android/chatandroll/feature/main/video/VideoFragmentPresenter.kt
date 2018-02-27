@@ -33,7 +33,7 @@ class VideoFragmentPresenter @Inject constructor(
         super.detachView()
     }
 
-    fun GetKeyFromFirebase(){
+    fun getKeyFromFirebase(){
         disposableForRetrieveKey = firebasePairedOnline.connect()
                 .andThen(firebasePairedOnline.getMeNewKey())
                 .compose(RxUtils.applySingleIoSchedulers())
@@ -59,25 +59,22 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun startChildVideo() {
         disposables += firebasePairedOnline.connect()
-                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders())
-                .doOnComplete { listenForDisconnectOrders() }
-                .andThen(firebasePairedOnline.setOnlineAndRetrieveRandomDevice())
-                .compose(RxUtils.applyMaybeIoSchedulers())
+                .andThen(firebasePairedOnline.getRoomId())
+
+                .compose(RxUtils.applySingleIoSchedulers())
                 .subscribeBy(
                         onSuccess = {
                             Timber.d("Next $it")
-                            getView()?.showCamViews()
-                            getView()?.connectTo(it)
+                            //getView()?.showCamViews()
+                            App.CURRENT_ROOM_ID =it
+                            connect()
+                            getView()?.showFirebaiseKey(it)
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
                             getView()?.showErrorWhileChoosingForPairing()
-                        },
-                        onComplete = {
-                            Timber.d("Done")
-                            getView()?.showCamViews()
-                            getView()?.showNoOneAvailable()
                         }
+
                 )
     }
 
@@ -137,7 +134,7 @@ class VideoFragmentPresenter @Inject constructor(
     fun confirmPairnigAndWaitForOther(otherDevice: DeviceInfoFirebase) {
         getView()?.hidePairingStatus()
         disposables += firebasePairingWifi.removerThisDeviceFromFolder()
-                .andThen(firebasePairingWifi.addOtherDeviceAsComfirmed(otherDevice))
+                .andThen(firebasePairingWifi.addOtherDeviceAsConfirmed(otherDevice))
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy (
@@ -148,18 +145,7 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    fun listenForIncomePairing() {
-        disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
-                .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .subscribeBy(
-                        onNext = {
-                            Timber.d("Disconnect order")
-                            getView()?.showOtherPartyFinished()
-                            disconnect()
-                        }
-                )
-    }
+
 
     fun listenForDisconnectOrders() { // TODO будет disconn при любом добавленом в "should_disconnect
         disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
@@ -191,6 +177,7 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     fun connect() = getView()?.run {
+
         attachService()
         showLookingForPartnerMessage()
         hideConnectButtonWithAnimation()

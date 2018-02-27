@@ -17,7 +17,7 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
         private const val ONLINE_DEVICES_PATH = "online_devices/"
     }
 
-    private fun deviceOnlinePath(deviceUuid: String) = ONLINE_DEVICES_PATH.plus(deviceUuid)
+    private fun deviceOnlinePath(deviceUuid: String) ="paired_devices/"+App.CURRENT_ROOM_ID +"/"+ ONLINE_DEVICES_PATH+deviceUuid
 
     fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {
         val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
@@ -39,7 +39,7 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
     private fun chooseRandomDevice(): Maybe<String> = Maybe.create { //TODO change chooseRandomDevice()
         var lastUuid: String? = null
 
-        firebaseDatabase.getReference(ONLINE_DEVICES_PATH).runTransaction(object : Transaction.Handler {
+        firebaseDatabase.getReference(deviceOnlinePath("")).runTransaction(object : Transaction.Handler {
             override fun doTransaction(mutableData: MutableData): Transaction.Result {
                 lastUuid = null
                 val genericTypeIndicator = object : GenericTypeIndicator<MutableMap<String, RouletteConnectionFirebase>>() {}
