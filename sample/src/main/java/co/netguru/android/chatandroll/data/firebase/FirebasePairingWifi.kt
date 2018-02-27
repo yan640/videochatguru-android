@@ -114,6 +114,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                 .setValue(roomName)
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
+
     }
 
 

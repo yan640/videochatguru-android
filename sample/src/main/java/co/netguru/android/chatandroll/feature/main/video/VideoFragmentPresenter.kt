@@ -138,11 +138,11 @@ class VideoFragmentPresenter @Inject constructor(
         disposables += firebasePairingWifi.removerThisDeviceFromFolder()
                 .andThen(firebasePairingWifi.addOtherDeviceAsConfirmed(otherDevice))
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
-                .flatMapCompletable{ firebasePairingWifi.saveDeviceToRoom(it.roomName) }
-                .compose(RxUtils.applyCompletableIoSchedulers())
+                .doAfterSuccess{ firebasePairingWifi.saveDeviceToRoom(it.roomName) }
+                .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
-                        onComplete = {
-                            Timber.d("You and device  paired! ")
+                        onSuccess = {
+                            Timber.d("You and device ${it.name} paired! ")
                         }
                 )
     }
