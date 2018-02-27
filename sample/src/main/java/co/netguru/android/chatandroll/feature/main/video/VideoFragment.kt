@@ -2,6 +2,7 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
@@ -13,6 +14,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
+
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.widget.Toast
@@ -59,6 +61,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private lateinit var serviceConnection: ServiceConnection
 
+    private lateinit var confirmationDialog: AlertDialog
+
     override fun getLayoutId() = R.layout.fragment_video
 
     override fun retrievePresenter() = App.getApplicationComponent(context).videoFragmentComponent().videoFragmentPresenter()
@@ -67,13 +71,14 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override val remoteUuid
         get() = service?.getRemoteUuid()
-    override fun saveFirebaiseKey(key: String){
-        SharedPreferences.saveToken(context,key)
-        App.CURRENT_DEVICE_UUID=key
+
+    override fun saveFirebaiseKey(key: String) {
+        SharedPreferences.saveToken(context, key)
+        App.CURRENT_DEVICE_UUID = key
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
 
-    private fun checkOrGetMyFirebaiseKey(){
+    private fun checkOrGetMyFirebaiseKey() {
 
 
         if (SharedPreferences.hasToken(context)) {
@@ -178,12 +183,26 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
 
-
     override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
-        alert("Pair with ${device.name}?") {  //TODO из res.strings
-            yesButton { getPresenter().confirmPairingAndWaitForOther(device) } //TODO добавить устройство в подтвержденные и отключить listener
-            noButton {  }
+
+
+        if (::confirmationDialog.isInitialized) { // TODO закрывает диалог на сопряжения и открывает новый при появлении нового устр-ва, заменить на очередь
+            confirmationDialog.cancel()
+            Timber.d("Confirmation dialog closed")
+        }
+        confirmationDialog = alert("Pair with ${device.name}?") {
+            //TODO из res.strings
+            yesButton { getPresenter().confirmPairingAndWaitForOther(device) }
+            noButton {
+                hidePairingStatus()
+                getPresenter().stopPairing() // TODO возможно стоит оставить поиск
+            }
         }.show()
+    }
+
+    override fun closePairingConfirmationDialog() {
+        confirmationDialog.cancel()
+        hidePairingStatus()
     }
 
     override fun attachService() {
@@ -266,8 +285,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         connectButton.visibility = View.VISIBLE
         pairButton.visibility = View.VISIBLE
     }
-
-
 
 
     override fun showErrorWhileChoosingForPairing() {
@@ -356,10 +373,9 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             showLookingForPartnerMessage()
             getPresenter().startWifiPair()
             showPairingStatus() // TODO внести ограничение 60сек на pair после которого отменить поиск
-        } ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
+        }
+                ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
-
-
 
 
     private fun showNoPermissionsSnackbar() {

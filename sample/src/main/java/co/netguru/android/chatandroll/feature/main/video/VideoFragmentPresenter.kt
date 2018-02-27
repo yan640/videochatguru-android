@@ -5,6 +5,7 @@ import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.feature.base.BasePresenter
+import io.reactivex.Completable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
@@ -24,8 +25,11 @@ class VideoFragmentPresenter @Inject constructor(
 ) : BasePresenter<VideoFragmentView>() {
 
     private val disposables = CompositeDisposable()
+    private var closeDialogDisposable = Disposables.disposed()
     private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
+    private var listenForPairedDisposable: Disposable = Disposables.disposed()
+
 
 
     override fun detachView() {
@@ -112,12 +116,15 @@ class VideoFragmentPresenter @Inject constructor(
     fun startWifiPair() {
         disposables += firebasePairingWifi.connect() // check connection to FDB
                 .andThen(firebasePairingWifi.addDeviceToPairingFolder())
-                .andThen(firebasePairingWifi.checkForWaitingDevices())
+                .andThen(firebasePairingWifi.listenForWaitingDevices())
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
                             Timber.d("Next $it")
                             getView()?.showPairingConfirmationDialog(it)
+
+                            // При закрытии приложении на другом устройстве закрыть диалог
+                            closeDialogOnOtherDeviceEscaped(it)
 
                         },
                         onError = {
@@ -130,20 +137,63 @@ class VideoFragmentPresenter @Inject constructor(
                             getView()?.showNoOneAvailable()
                         }
                 )
-
     }
+
+    fun disposeListenerIfPaired(otherDevice: DeviceInfoFirebase) {
+        listenForPairedDisposable = firebasePairingWifi
+                .listenForOtherConfirmedPairing(otherDevice)
+                .flatMapCompletable { Completable.complete() }
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onComplete = {
+                            if (!closeDialogDisposable.isDisposed) {
+                                closeDialogDisposable.dispose()
+                            }
+
+                        }
+                )
+    }
+
+    /**
+     * Закрывает диалог подтверждающий сопряжение, если закрыть приложение на
+     * [otherDevice]
+     */
+    fun closeDialogOnOtherDeviceEscaped(otherDevice: DeviceInfoFirebase) {
+        disposeListenerIfPaired(otherDevice)
+        closeDialogDisposable = firebasePairingWifi
+                .listenForDeviceEscaping(otherDevice)
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onComplete = {
+                            getView()?.closePairingConfirmationDialog() // TODO  отключить листнера на поиск pairingDevices
+                        }
+                )
+    }
+
 
     fun confirmPairingAndWaitForOther(otherDevice: DeviceInfoFirebase) {
         getView()?.hidePairingStatus()
-        disposables += firebasePairingWifi.removerThisDeviceFromFolder()
-                .andThen(firebasePairingWifi.addOtherDeviceAsConfirmed(otherDevice))
+        disposables.clear()
+        if (!listenForPairedDisposable.isDisposed) {
+            listenForPairedDisposable.dispose()
+        }
+        disposables += firebasePairingWifi.saveOtherDeviceAsConfirmed(otherDevice)
+                .andThen(firebasePairingWifi.removerThisDeviceFromFolder())
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
-                .doAfterSuccess{ firebasePairingWifi.saveDeviceToRoom(it.roomName) }
+                .doAfterSuccess { firebasePairingWifi.saveDeviceToRoom(it.roomName) }
                 .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
                         onSuccess = {
-                            Timber.d("You and device ${it.name} paired! ")
+                            Timber.d("You and device ${it.name} paired! ")// TODO вывести устойтво на экран для подключения
                         }
+                )
+    }
+
+    fun stopPairing() {
+        firebasePairingWifi.removerThisDeviceFromFolder()
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onError = { Timber.d(it.fillInStackTrace()) }
                 )
     }
 
@@ -195,6 +245,7 @@ class VideoFragmentPresenter @Inject constructor(
         showLookingForPartnerMessage()
         hideConnectButtonWithAnimation()
     }
+
 
     fun disconnectByUser() {
         val remoteUuid = getView()?.remoteUuid

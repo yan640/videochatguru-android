@@ -3,9 +3,9 @@ package co.netguru.android.chatandroll.data.firebase
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
+import co.netguru.android.chatandroll.common.extension.rxValueEvents
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
-import co.netguru.android.chatandroll.feature.main.video.VideoFragment
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -33,7 +33,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     private fun deviceOnlinePath(deviceUuid: String) = WIFI_PAIRING_PATH + deviceUuid
 
     private val pairingDevicesPath: String
-        get() = WIFI_PAIRING_PATH + VideoFragment.CURRENT_WIFI_BSSID
+        get() = WIFI_PAIRING_PATH + "TEST_WIFI"//VideoFragment.CURRENT_WIFI_BSSID
 
 
     private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model)
@@ -45,11 +45,9 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
      * Add you device info to FDB folder [WIFI_PAIRING_PATH]/[CURRENT_WIFI_BSSID]
      */
     fun addDeviceToPairingFolder(): Completable = Completable.create { emitter ->
-        val pairingReferenceAll = firebaseDatabase.getReference(pairingDevicesPath)
-        val key = pairingReferenceAll
-                .push()
-                .key
-        paingReferenceThisDevice = pairingReferenceAll.child(key)
+        paingReferenceThisDevice = firebaseDatabase
+                .getReference(pairingDevicesPath)
+                .child(App.CURRENT_DEVICE_UUID)
         with(paingReferenceThisDevice) {
             onDisconnect().removeValue()
             setValue(myDevice).addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
@@ -67,12 +65,22 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     /**
      * Get Flowable with all ready for pairing devices in your wifi
      */
-    fun checkForWaitingDevices(): Flowable<DeviceInfoFirebase> =
+    fun listenForWaitingDevices(): Flowable<DeviceInfoFirebase> =
             firebaseDatabase.getReference(pairingDevicesPath)
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()  // TODO возможно возвращает  DeviceInfoFirebase
                     .map { it.data.getValue(DeviceInfoFirebase::class.java)!! }
                     .filter { it != myDevice }
+
+
+    fun listenForDeviceEscaping(device: DeviceInfoFirebase): Completable =
+            firebaseDatabase.getReference(pairingDevicesPath)
+                    .child(device.uuid)
+                    .rxValueEvents()
+                    .filter { it.value == null }  // если null значит значение удалили
+                    .firstElement()
+                    .flatMapCompletable { Completable.complete() }
+
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()    // TODO нужно где-то использовать
@@ -83,7 +91,6 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
     fun listenForOtherConfirmedPairing(otherDevice: DeviceInfoFirebase): Maybe<PairedDevice> =
-            //  val pairingReferenceOther =
             firebaseDatabase
                     .getReference(PAIRED_PATH)
                     .child(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
@@ -99,7 +106,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         return if (yourUuid > otherUuid) yourUuid else otherUuid      // TODO возможноо идет сравение по длине, проверить
     }
 
-    fun addOtherDeviceAsConfirmed(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
+    fun saveOtherDeviceAsConfirmed(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
         val roomName = choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid)
         firebaseDatabase.getReference(PAIRED_PATH)
                 .child(roomName)
