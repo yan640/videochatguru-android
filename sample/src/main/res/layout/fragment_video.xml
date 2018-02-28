@@ -46,10 +46,36 @@
         android:layout_marginBottom="-100dp"
         android:layout_marginTop="@dimen/splash_screen_vertical_margin"
         android:background="@drawable/rounded_button"
-        android:text="@string/action_pair">
+        android:text="@string/action_pair"/>
 
 
-    </Button>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/parentButton"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_button"
+            android:text="@string/parent"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/childButton"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_button"
+            android:text="@string/child"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+
+
 
     <ProgressBar
         android:id="@+id/progressBar"

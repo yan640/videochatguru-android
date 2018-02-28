@@ -24,6 +24,7 @@ import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
+import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
@@ -198,6 +199,15 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                 getPresenter().stopPairing() // TODO возможно стоит оставить поиск
             }
         }.show()
+    }
+
+    override fun showSetChildNameDialog(device: PairedDevice) {
+     //
+    }
+
+    override fun showParentChildButtons(){
+        childButton.visibility = View.VISIBLE
+        parentButton.visibility = View.VISIBLE
     }
 
     override fun closePairingConfirmationDialog() {

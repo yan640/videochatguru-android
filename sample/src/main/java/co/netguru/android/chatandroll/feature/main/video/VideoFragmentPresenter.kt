@@ -182,7 +182,8 @@ class VideoFragmentPresenter @Inject constructor(
                 .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
                         onSuccess = {
-                            Timber.d("You and device ${it.name} paired! ")// TODO вывести устойтво на экран для подключения
+                            Timber.d("You and device ${it.name} paired! ")
+                            getView()?.showParentChildButtons()// TODO вывести устойтво на экран для подключения
                         }
                 )
     }

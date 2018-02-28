@@ -1,6 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
+import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.feature.base.MvpView
 
 interface VideoFragmentView : MvpView {
@@ -25,4 +26,6 @@ interface VideoFragmentView : MvpView {
     fun hideConnectButtonWithAnimation()
     fun showPairingStatus()
     fun hidePairingStatus()
+    fun showSetChildNameDialog(device: PairedDevice)
+    fun showParentChildButtons()
 }

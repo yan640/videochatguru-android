@@ -25,4 +25,6 @@
     <string name="background_work_notification_channel_description">Warns about app working in the background</string>
     <string name="ongoing_call_notification_title">Chat&amp;Roll is running</string>
     <string name="ongoing_call_notification_text">Video chat call is still running in the background</string>
+    <string name="parent">Parent</string>
+    <string name="child">Child</string>
 </resources>
