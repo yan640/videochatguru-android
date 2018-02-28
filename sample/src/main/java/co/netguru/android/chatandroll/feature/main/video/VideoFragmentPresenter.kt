@@ -5,7 +5,6 @@ import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.feature.base.BasePresenter
-import io.reactivex.Completable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
@@ -29,7 +28,6 @@ class VideoFragmentPresenter @Inject constructor(
     private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
     private var listenForPairedDisposable: Disposable = Disposables.disposed()
-
 
 
     override fun detachView() {
@@ -142,7 +140,7 @@ class VideoFragmentPresenter @Inject constructor(
     fun disposeListenerIfPaired(otherDevice: DeviceInfoFirebase) {
         listenForPairedDisposable = firebasePairingWifi
                 .listenForOtherConfirmedPairing(otherDevice)
-                .flatMapCompletable { Completable.complete() }
+                .ignoreElement() // переобразует Maybe -> Completable
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
@@ -177,10 +175,10 @@ class VideoFragmentPresenter @Inject constructor(
         if (!listenForPairedDisposable.isDisposed) {
             listenForPairedDisposable.dispose()
         }
-        disposables += firebasePairingWifi.saveOtherDeviceAsConfirmed(otherDevice)
+        disposables += firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
                 .andThen(firebasePairingWifi.removerThisDeviceFromFolder())
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
-                .doAfterSuccess { firebasePairingWifi.saveDeviceToRoom(it.roomName) }
+                .doOnSuccess { firebasePairingWifi.saveDeviceToRoom(it.roomName) }
                 .compose(RxUtils.applyMaybeIoSchedulers())
                 .subscribeBy(
                         onSuccess = {

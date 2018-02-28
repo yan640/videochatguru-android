@@ -4,6 +4,7 @@ import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
 import co.netguru.android.chatandroll.common.extension.rxValueEvents
+import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import com.google.firebase.database.DataSnapshot
@@ -13,6 +14,8 @@ import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.rxkotlin.ofType
+import io.reactivex.rxkotlin.subscribeBy
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -101,28 +104,29 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .firstElement()
 
 
-
     private fun choosePairedFolderName(yourUuid: String, otherUuid: String): String {
         return if (yourUuid > otherUuid) yourUuid else otherUuid      // TODO возможноо идет сравение по длине, проверить
     }
 
-    fun saveOtherDeviceAsConfirmed(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
+    fun saveOtherDeviceAsPaired(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
         val roomName = choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid)
         firebaseDatabase.getReference(PAIRED_PATH)
                 .child(roomName)
-                .push()
+                .child(otherDevice.uuid)
                 .setValue(PairedDevice(otherDevice.uuid, otherDevice.name, "", roomName, true))
                 .addOnCompleteListener { emitter.onComplete() }
     }
 
-    fun saveDeviceToRoom(roomName: String): Completable = Completable.create { emitter ->
-        firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
-                .child(App.CURRENT_DEVICE_UUID)
-                .setValue(roomName)
-                .addOnCompleteListener { emitter.onComplete() }
-                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
-
+    fun saveDeviceToRoom(roomName: String) {
+        val completable = Completable.create { emitter ->
+            firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
+                    .child(App.CURRENT_DEVICE_UUID)
+                    .setValue(roomName)
+                    .addOnCompleteListener { emitter.onComplete() }
+                    .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
+        }
+        completable.compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(onError = { Timber.d(it.fillInStackTrace()) })
     }
-
 
 }
