@@ -33,25 +33,23 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
     }
 
-    private fun deviceOnlinePath(deviceUuid: String) = WIFI_PAIRING_PATH + deviceUuid
-
     private val pairingDevicesPath: String
         get() = WIFI_PAIRING_PATH + "TEST_WIFI"//VideoFragment.CURRENT_WIFI_BSSID
 
 
     private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model)
 
-    private lateinit var paingReferenceThisDevice: DatabaseReference
+    private lateinit var pairingReferenceThisDevice: DatabaseReference
 
 
     /**
      * Add you device info to FDB folder [WIFI_PAIRING_PATH]/[CURRENT_WIFI_BSSID]
      */
     fun addDeviceToPairingFolder(): Completable = Completable.create { emitter ->
-        paingReferenceThisDevice = firebaseDatabase
+        pairingReferenceThisDevice = firebaseDatabase
                 .getReference(pairingDevicesPath)
                 .child(App.CURRENT_DEVICE_UUID)
-        with(paingReferenceThisDevice) {
+        with(pairingReferenceThisDevice) {
             onDisconnect().removeValue()
             setValue(myDevice).addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
             // TODO удалить listener по завершению
@@ -60,7 +58,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
     fun removerThisDeviceFromFolder(): Completable = Completable.create { emitter ->
-        paingReferenceThisDevice.removeValue()
+        pairingReferenceThisDevice.removeValue()
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
@@ -71,7 +69,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     fun listenForWaitingDevices(): Flowable<DeviceInfoFirebase> =
             firebaseDatabase.getReference(pairingDevicesPath)
                     .rxChildEvents()
-                    .ofType<ChildEventAdded<DataSnapshot>>()  // TODO возможно возвращает  DeviceInfoFirebase
+                    .ofType<ChildEventAdded<DataSnapshot>>()
                     .map { it.data.getValue(DeviceInfoFirebase::class.java)!! }
                     .filter { it != myDevice }
 
@@ -99,13 +97,13 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .child(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()
-                    .map { it.data.getValue(PairedDevice::class.java)!! } //TODO подумать как обойтись без!!
+                    .map { it.data.getValue(PairedDevice::class.java) as PairedDevice }
                     .filter { it.uuid == App.CURRENT_DEVICE_UUID }
                     .firstElement()
 
 
     private fun choosePairedFolderName(yourUuid: String, otherUuid: String): String {
-        return if (yourUuid > otherUuid) yourUuid else otherUuid      // TODO возможноо идет сравение по длине, проверить
+        return if (yourUuid > otherUuid) yourUuid else otherUuid
     }
 
     fun saveOtherDeviceAsPaired(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
