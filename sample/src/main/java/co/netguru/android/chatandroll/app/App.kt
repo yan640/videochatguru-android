@@ -54,7 +54,6 @@ class App : Application() {
         if (LeakCanary.isInAnalyzerProcess(this)) {
             return
         }
-        roomUUID = "hello"
         LeakCanary.install(this)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())

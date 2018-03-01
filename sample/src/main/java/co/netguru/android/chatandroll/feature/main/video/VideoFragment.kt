@@ -33,7 +33,6 @@ import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.yesButton
 import org.webrtc.PeerConnection
 import timber.log.Timber
-import java.util.*
 
 @SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
@@ -66,8 +65,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private lateinit var confirmationDialog: AlertDialog
 
-    override var roomUUID = ""
-
     override fun getLayoutId() = R.layout.fragment_video
 
     override fun retrievePresenter() = App.getApplicationComponent(context).videoFragmentComponent().videoFragmentPresenter()
@@ -82,12 +79,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         App.CURRENT_DEVICE_UUID = key
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
-    override fun ShowFirebaiseKey(key: String){
-
-        Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
-    }
-
-
 
     private fun checkOrGetMyFirebaiseKey() {
         if (SharedPreferences.hasToken(context)) {
@@ -110,7 +101,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
         connectButton.setOnClickListener {
             //getPresenter().connect()
-            getPresenter().startChildVideo()
+            //getPresenter().startChildVideo()
         }
         pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
@@ -291,11 +282,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         pairButton.visibility = View.GONE
     }
 
-//    override fun showPairPhones(PairedPhones: Map<String, String>) {
-//        Toast.makeText(context, "PairedPhones: ${PairedPhones}", Toast.LENGTH_LONG).show()
-//        for (sdf in PairedPhones)
-//            getPresenter().NewPaire(sdf.key)
-//    }
 
     override fun showStartRouletteView() {
         buttonPanel.visibility = View.GONE
@@ -304,9 +290,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         connectButton.visibility = View.VISIBLE
         pairButton.visibility = View.VISIBLE
     }
-
-
-
 
     override fun showErrorWhileChoosingForPairing() {
         showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)

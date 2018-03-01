@@ -2,10 +2,15 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import android.content.Context
 import co.netguru.android.chatandroll.app.App
+import co.netguru.android.chatandroll.common.extension.ChildEventAdded
+import co.netguru.android.chatandroll.common.extension.ChildEventChanged
+import co.netguru.android.chatandroll.common.extension.ChildEventRemoved
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
+import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.feature.base.BasePresenter
+import com.google.firebase.database.DataSnapshot
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
@@ -31,6 +36,7 @@ class VideoFragmentPresenter @Inject constructor(
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
     private var listenForPairedDisposable: Disposable = Disposables.disposed()
     private val app: App by lazy { App.get(appContext) }
+    private val listOfPairedDevices = mutableListOf<PairedDevice>()
 
     override fun detachView() {
         super.detachView()
@@ -60,28 +66,28 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
-    fun startChildVideo() {
-        disposables += firebasePairedOnline.connect()
-                .andThen(firebasePairedOnline.GetRoomId())
-
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .subscribeBy(
-                        onNext = {
-                            Timber.d("Next $it")
-                            //getView()?.showCamViews()
-                            getView()?.ShowFirebaiseKey(it)
-                        },
-                        onError = {
-                            Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingForPairing()
-                        },
-                        onComplete = {
-                            Timber.d("Done")
-                            //getView()?.showCamViews()
-                            getView()?.showNoOneAvailable()
-                        }
-                )
-    }
+//    fun startChildVideo() {
+//        disposables += firebasePairedOnline.connect()
+//                .andThen(firebasePairedOnline.GetRoomId())
+//
+//                .compose(RxUtils.applyFlowableIoSchedulers())
+//                .subscribeBy(
+//                        onNext = {
+//                            Timber.d("Next $it")
+//                            //getView()?.showCamViews()
+//                            getView()?.ShowFirebaiseKey(it)
+//                        },
+//                        onError = {
+//                            Timber.e(it, "Error while choosing random")
+//                            getView()?.showErrorWhileChoosingForPairing()
+//                        },
+//                        onComplete = {
+//                            Timber.d("Done")
+//                            //getView()?.showCamViews()
+//                            getView()?.showNoOneAvailable()
+//                        }
+//                )
+//    }
 
     fun startConnection() {
         disposables += firebaseSignalingOnline.connect()
@@ -289,7 +295,23 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
-//    fun getPairedDevices(roomName:String) {
-//        disposables+=firebasePairingWifi.listenForPairedDevicesInRoom(roomName)
-//    }
+    fun getPairedDevices(roomName: String) {
+        disposables += firebasePairingWifi.listenForPairedDevicesInRoom(roomName)
+                .compose(RxUtils.applyFlowableIoSchedulers())
+                .subscribeBy(
+                        onNext = {
+                            when (it) {
+                                is ChildEventAdded<DataSnapshot> ->
+                                    listOfPairedDevices += it.data
+                                            .getValue(PairedDevice::class.java) as PairedDevice
+                                is ChildEventRemoved<DataSnapshot> ->
+                                    listOfPairedDevices -= it.data
+                                            .getValue(PairedDevice::class.java) as PairedDevice
+                                is ChildEventChanged ->
+                                        listOfPairedDevices.refilter { device -> device.uuid == it.previousChildName }.get(0) = it.data.getValue(PairedDevice::class.java) as PairedDevice
+                            }
+                        }
+                )
+
+    }
 }

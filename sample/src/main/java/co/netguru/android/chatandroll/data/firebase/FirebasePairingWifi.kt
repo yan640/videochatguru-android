@@ -1,6 +1,7 @@
 package co.netguru.android.chatandroll.data.firebase
 
 import co.netguru.android.chatandroll.app.App
+import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
 import co.netguru.android.chatandroll.common.extension.rxValueEvents
@@ -134,12 +135,12 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .filter { it.value!=null }
                     .map { it.getValue(String::class.java) as String }
 
-    fun listenForPairedDevicesInRoom(roomUuid:String): Flowable<DataSnapshot> =
+    fun listenForPairedDevicesInRoom(roomUuid:String): Flowable<ChildEvent<DataSnapshot>> =
             firebaseDatabase.getReference(PAIRED_PATH)
                     .child(roomUuid)
                     .rxChildEvents()
-                    .ofType<ChildEventAdded<DataSnapshot>>()
-                    .map { it.data }
+
+
 
 
 }

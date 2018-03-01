@@ -1,19 +1,12 @@
 package co.netguru.android.chatandroll.data.firebase
 
 import co.netguru.android.chatandroll.app.App
-import co.netguru.android.chatandroll.common.extension.ChildEventAdded
-import co.netguru.android.chatandroll.common.extension.rxChildEvents
 import co.netguru.android.chatandroll.common.extension.rxSingleValue
-import co.netguru.android.chatandroll.data.model.IceServerFirebase
 import co.netguru.android.chatandroll.data.model.RouletteConnectionFirebase
 import com.google.firebase.database.*
 import io.reactivex.Completable
-import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Single
-import io.reactivex.rxkotlin.ofType
-import io.reactivex.rxkotlin.toMaybe
-import org.webrtc.SessionDescription
 import timber.log.Timber
 import java.security.SecureRandom
 import javax.inject.Inject
@@ -49,9 +42,6 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
             firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
                     .rxSingleValue()
                     .map { it.getValue(String::class.java)!! }
-
-
-
 
 
     fun disconnect(): Completable = Completable.fromAction {
