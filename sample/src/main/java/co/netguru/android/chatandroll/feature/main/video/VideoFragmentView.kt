@@ -15,7 +15,7 @@ interface VideoFragmentView : MvpView {
     fun closePairingConfirmationDialog()
     //fun showPairPhones(PairedPhones : Map<String, String>)
     fun saveFirebaiseKey(key: String)
-    fun ShowFirebaiseKey(key: String)
+    fun showFirebaiseKey(key: String)
     fun showStartRouletteView()
     fun disconnect()
     fun attachService()
