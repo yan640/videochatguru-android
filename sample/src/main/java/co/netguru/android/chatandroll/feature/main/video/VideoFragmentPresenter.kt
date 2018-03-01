@@ -1,5 +1,6 @@
 package co.netguru.android.chatandroll.feature.main.video
 
+import android.content.Context
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.*
@@ -16,6 +17,7 @@ import javax.inject.Inject
 
 
 class VideoFragmentPresenter @Inject constructor(
+        private val appContext: Context,
         private val firebaseSignalingOnline: FirebaseSignalingOnline,
         private val firebasePairedOnline: FirebasePairedOnline,
         private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
@@ -28,7 +30,7 @@ class VideoFragmentPresenter @Inject constructor(
     private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
     private var listenForPairedDisposable: Disposable = Disposables.disposed()
-
+    private val app: App by lazy { App.get(appContext) }
 
     override fun detachView() {
         super.detachView()
@@ -43,7 +45,7 @@ class VideoFragmentPresenter @Inject constructor(
                             Timber.d("Next $it")
                             App.CURRENT_DEVICE_UUID = it
 
-                            getView()?.saveFirebaiseKey(it)
+                            getView()?.saveFirebaseDeviceKey(it)
                             disposableForRetrieveKey.dispose()
 //                            getView()?.showCamViews()
 //                            getView()?.connectTo(it)
@@ -276,4 +278,19 @@ class VideoFragmentPresenter @Inject constructor(
             }
         }
     }
+
+
+    fun getRoomNameForDevice() {
+        disposables += firebasePairingWifi.listenForDeviceToRoom()
+                .compose(RxUtils.applyFlowableIoSchedulers())
+                .subscribeBy(
+                        onNext = {
+                            app.roomUUID = it
+                        }
+                )
+    }
+
+//    fun getPairedDevices(roomName:String) {
+//        disposables+=firebasePairingWifi.listenForPairedDevicesInRoom(roomName)
+//    }
 }

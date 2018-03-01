@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
-
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.widget.Toast
@@ -46,6 +45,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         var CURRENT_WIFI_BSSID = ""
 
         private const val KEY_IN_CHAT = "key:in_chat"
+        private const val KEY_ROOM_UUID = "key:room_uuid"
+
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
         private val NECESSARY_PERMISSIONS = arrayOf(
                 Manifest.permission.CAMERA,
@@ -64,6 +65,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private lateinit var confirmationDialog: AlertDialog
 
+    override var roomUUID = ""
+
     override fun getLayoutId() = R.layout.fragment_video
 
     override fun retrievePresenter() = App.getApplicationComponent(context).videoFragmentComponent().videoFragmentPresenter()
@@ -71,17 +74,15 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     var service: WebRtcService? = null
 
     override val remoteUuid
-        get() = service?.getRemoteUuid()
+        get() = service?.getRemoteUuid()  // TODO проверить где используется
 
-    override fun saveFirebaiseKey(key: String) {
+    override fun saveFirebaseDeviceKey(key: String) {
         SharedPreferences.saveToken(context, key)
         App.CURRENT_DEVICE_UUID = key
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
 
     private fun checkOrGetMyFirebaiseKey() {
-
-
         if (SharedPreferences.hasToken(context)) {
             App.CURRENT_DEVICE_UUID = SharedPreferences.getToken(context)
         } else {
@@ -97,12 +98,18 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         (localVideoView.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
+
         if (savedInstanceState?.getBoolean(KEY_IN_CHAT) == true) {
             initAlreadyRunningConnection()
         }
+        if (savedInstanceState != null) {
+            roomUUID = savedInstanceState.getString(KEY_ROOM_UUID, "")
+        }
+
         connectButton.setOnClickListener {
             getPresenter().connect()
         }
+        //getPresenter().getRoomNameForDevice()
         pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
         }
@@ -147,6 +154,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        outState.putString(KEY_ROOM_UUID,roomUUID)
         if (remoteVideoView.visibility == View.VISIBLE) {
             outState.putBoolean(KEY_IN_CHAT, true)
         }
@@ -170,6 +178,9 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             error("Unknown permission request code $requestCode")
         }
     }
+
+    override fun getAppContext():Context  = context  // TODO проверить не будет ли источником утечек
+
 
     override fun showPairingStatus() {
         pairButton.isEnabled = false
@@ -202,10 +213,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun showSetChildNameDialog(device: PairedDevice) {
-     //
+        //
     }
 
-    override fun showParentChildButtons(){
+    override fun showParentChildButtons() {
         childButton.visibility = View.VISIBLE
         parentButton.visibility = View.VISIBLE
     }

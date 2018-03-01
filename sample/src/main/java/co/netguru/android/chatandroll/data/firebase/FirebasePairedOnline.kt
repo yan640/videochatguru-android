@@ -3,8 +3,6 @@ package co.netguru.android.chatandroll.data.firebase
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
-import co.netguru.android.chatandroll.common.extension.rxSingleValue
-import co.netguru.android.chatandroll.data.model.IceServerFirebase
 import co.netguru.android.chatandroll.data.model.RouletteConnectionFirebase
 import com.google.firebase.database.*
 import io.reactivex.Completable
@@ -40,8 +38,7 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
         it.onComplete()
     }.andThen(chooseRandomDevice())
 
-    fun getMeNewKey(): Single<String> =   Single.create {it.onSuccess(firebaseNewPhoneReference.push().key)  }
-
+    fun getMeNewKey(): Single<String> = Single.create { it.onSuccess(firebaseNewPhoneReference.push().key) }
 
 
     fun GetRoomId(): Flowable<ChildEventAdded<String>> {
@@ -65,8 +62,8 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
             override fun doTransaction(mutableData: MutableData): Transaction.Result {
                 lastUuid = null
                 val genericTypeIndicator = object : GenericTypeIndicator<MutableMap<String, RouletteConnectionFirebase>>() {}
-                val availableDevices = mutableData.getValue(genericTypeIndicator) ?:
-                return Transaction.success(mutableData)
+                val availableDevices = mutableData.getValue(genericTypeIndicator)
+                        ?: return Transaction.success(mutableData)
 
                 val removedSelfValue = availableDevices.remove(App.CURRENT_DEVICE_UUID)
 

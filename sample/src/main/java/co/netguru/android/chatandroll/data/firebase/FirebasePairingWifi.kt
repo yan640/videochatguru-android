@@ -127,4 +127,19 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                 .subscribeBy(onError = { Timber.d(it.fillInStackTrace()) })
     }
 
+    fun listenForDeviceToRoom(): Flowable<String> =
+            firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
+                    .child(App.CURRENT_DEVICE_UUID)
+                    .rxValueEvents()     // TODO возможно не выводит изначальное состояние, а только после изменений
+                    .filter { it.value!=null }
+                    .map { it.getValue(String::class.java) as String }
+
+    fun listenForPairedDevicesInRoom(roomUuid:String): Flowable<DataSnapshot> =
+            firebaseDatabase.getReference(PAIRED_PATH)
+                    .child(roomUuid)
+                    .rxChildEvents()
+                    .ofType<ChildEventAdded<DataSnapshot>>()
+                    .map { it.data }
+
+
 }

@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Build
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v7.app.AppCompatDelegate
+import android.util.Log
 import android.widget.Toast
 import co.netguru.videochatguru.disableWebRtcLogs
 import co.netguru.videochatguru.enableInternalWebRtclogs
@@ -35,6 +36,8 @@ class App : Application() {
                 (context.applicationContext as App).applicationComponent
     }
 
+    lateinit var roomUUID:String
+
     val applicationComponent: ApplicationComponent by lazy {
         DaggerApplicationComponent.builder()
                 .applicationModule(ApplicationModule(this))
@@ -51,6 +54,7 @@ class App : Application() {
         if (LeakCanary.isInAnalyzerProcess(this)) {
             return
         }
+        roomUUID = "hello"
         LeakCanary.install(this)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
