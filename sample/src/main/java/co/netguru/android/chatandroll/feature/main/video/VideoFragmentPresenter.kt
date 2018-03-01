@@ -66,28 +66,26 @@ class VideoFragmentPresenter @Inject constructor(
 
     }
 
-//    fun startChildVideo() {
-//        disposables += firebasePairedOnline.connect()
-//                .andThen(firebasePairedOnline.GetRoomId())
-//
-//                .compose(RxUtils.applyFlowableIoSchedulers())
-//                .subscribeBy(
-//                        onNext = {
-//                            Timber.d("Next $it")
-//                            //getView()?.showCamViews()
-//                            getView()?.ShowFirebaiseKey(it)
-//                        },
-//                        onError = {
-//                            Timber.e(it, "Error while choosing random")
-//                            getView()?.showErrorWhileChoosingForPairing()
-//                        },
-//                        onComplete = {
-//                            Timber.d("Done")
-//                            //getView()?.showCamViews()
-//                            getView()?.showNoOneAvailable()
-//                        }
-//                )
-//    }
+    fun startChildVideo() {
+        disposables += firebasePairedOnline.connect()
+                .andThen(firebasePairedOnline.getRoomId())
+
+                .compose(RxUtils.applySingleIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d("Next $it")
+                            //getView()?.showCamViews()
+                            App.CURRENT_ROOM_ID =it
+                            connect()
+                            getView()?.showFirebaiseKey(it)
+                        },
+                        onError = {
+                            Timber.e(it, "Error while choosing random")
+                            getView()?.showErrorWhileChoosingForPairing()
+                        }
+
+                )
+    }
 
     fun startConnection() {
         disposables += firebaseSignalingOnline.connect()
@@ -295,23 +293,23 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
-    fun getPairedDevices(roomName: String) {
-        disposables += firebasePairingWifi.listenForPairedDevicesInRoom(roomName)
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .subscribeBy(
-                        onNext = {
-                            when (it) {
-                                is ChildEventAdded<DataSnapshot> ->
-                                    listOfPairedDevices += it.data
-                                            .getValue(PairedDevice::class.java) as PairedDevice
-                                is ChildEventRemoved<DataSnapshot> ->
-                                    listOfPairedDevices -= it.data
-                                            .getValue(PairedDevice::class.java) as PairedDevice
-                                is ChildEventChanged ->
-                                        listOfPairedDevices.refilter { device -> device.uuid == it.previousChildName }.get(0) = it.data.getValue(PairedDevice::class.java) as PairedDevice
-                            }
-                        }
-                )
-
-    }
+//    fun getPairedDevices(roomName: String) {
+//        disposables += firebasePairingWifi.listenForPairedDevicesInRoom(roomName)
+//                .compose(RxUtils.applyFlowableIoSchedulers())
+//                .subscribeBy(
+//                        onNext = {
+//                            when (it) {
+//                                is ChildEventAdded<DataSnapshot> ->
+//                                    listOfPairedDevices += it.data
+//                                            .getValue(PairedDevice::class.java) as PairedDevice
+//                                is ChildEventRemoved<DataSnapshot> ->
+//                                    listOfPairedDevices -= it.data
+//                                            .getValue(PairedDevice::class.java) as PairedDevice
+//                                is ChildEventChanged ->
+//                                        listOfPairedDevices.refilter { device -> device.uuid == it.previousChildName }.get(0) = it.data.getValue(PairedDevice::class.java) as PairedDevice
+//                            }
+//                        }
+//                )
+//
+//    }
 }

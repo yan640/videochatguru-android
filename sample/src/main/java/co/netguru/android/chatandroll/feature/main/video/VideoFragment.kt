@@ -88,7 +88,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
         }
     }
+    override fun showFirebaiseKey(key: String){
 
+        Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
+    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         checkOrGetMyFirebaiseKey()
@@ -101,7 +104,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
         connectButton.setOnClickListener {
             //getPresenter().connect()
-            //getPresenter().startChildVideo()
+            getPresenter().startChildVideo()
         }
         pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
