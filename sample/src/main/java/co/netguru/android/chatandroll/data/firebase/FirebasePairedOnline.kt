@@ -12,6 +12,8 @@ import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.rxkotlin.ofType
+import io.reactivex.rxkotlin.toMaybe
+import org.webrtc.SessionDescription
 import timber.log.Timber
 import java.security.SecureRandom
 import javax.inject.Inject
