@@ -20,6 +20,7 @@ class FirebaseIceCandidates @Inject constructor(private val firebaseDatabase: Fi
         private const val ICE_CANDIDATES_PATH = "ice_candidates/"
     }
 
+
     private fun deviceIceCandidatesPath(uuid: String) = "paired_devices/" +App.CURRENT_ROOM_ID +"/"+ ICE_CANDIDATES_PATH +uuid
 
     fun send(iceCandidate: IceCandidate): Completable = Completable.create {
