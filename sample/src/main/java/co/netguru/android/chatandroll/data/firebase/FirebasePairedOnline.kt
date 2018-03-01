@@ -4,14 +4,19 @@ import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
 import co.netguru.android.chatandroll.common.extension.rxSingleValue
+import co.netguru.android.chatandroll.common.extension.rxValueEvents
+import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.IceServerFirebase
 import co.netguru.android.chatandroll.data.model.RouletteConnectionFirebase
+import co.netguru.android.chatandroll.data.model.SessionDescriptionFirebase
 import com.google.firebase.database.*
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.rxkotlin.ofType
+import io.reactivex.rxkotlin.toMaybe
+import org.webrtc.SessionDescription
 import timber.log.Timber
 import java.security.SecureRandom
 import javax.inject.Inject
@@ -22,12 +27,12 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
 
     companion object {
         private const val ONLINE_DEVICES_PATH = "online_devices/"
-        private const val PHONE_ROOM = "Phone_room"
+        private const val PHONE_ROOM = "device_to_room/"
         private const val ROOMS = "Rooms"
     }
 
     private fun deviceOnlinePath(deviceUuid: String) = ONLINE_DEVICES_PATH.plus(deviceUuid)
-    private fun Phone_roomPath(deviceUuid: String) = PHONE_ROOM.plus(deviceUuid)
+    private fun Phone_roomPath(deviceUuid: String) = PHONE_ROOM.plus("125e4548-8c43-48e4-b4d7-dbc9bf55b382")
     private fun ROOMSPath(deviceUuid: String) = ROOMS
     private val firebaseNewPhoneReference by lazy { firebaseDatabase.getReference(PHONE_ROOM) }
 
@@ -41,14 +46,32 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
     }.andThen(chooseRandomDevice())
 
     fun getMeNewKey(): Single<String> =   Single.create {it.onSuccess(firebaseNewPhoneReference.push().key)  }
+  //  fun getMeMyRoomKey(): Single<String> =   Single.create {it.onSuccess(firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))  }
+//    fun GetRoomId(): Flowable<ChildEventAdded<String>> {
+//        return firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
+//                .rxChildEvents()
+//                .ofType<ChildEventAdded<String>>()
+//    }
+//fun listenForNewAnswers(): Flowable<SessionDescription> {
+//    return Single.just { firebaseDatabase.getReference(deviceAnswersPath(App.CURRENT_DEVICE_UUID)) }
+//            .flatMapPublisher { it().rxValueEvents(SessionDescriptionFirebase::class.java) }
+//            .flatMapMaybe { it.data.toMaybe() }
+//            .map { it.toSessionDescription() }
+//}
+//    fun GetRoomId(): Flowable< String >
+//            =
+//            firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
+//                    .rxChildEvents()
+//                    .ofType<ChildEventAdded<DataSnapshot>>()
+//                    .map { it.data.getValue( ).toString()  }
 
+    fun GetRoomId(): Flowable< String >
+            =
+            firebaseDatabase.getReference(Phone_roomPath("125e4548-8c43-48e4-b4d7-dbc9bf55b382"))
+                    .rxChildEvents()
+                    .ofType<ChildEventAdded<DataSnapshot>>()
+                    .map { it.data.getValue( ).toString()  }
 
-
-    fun GetRoomId(): Flowable<ChildEventAdded<String>> {
-        return firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
-                .rxChildEvents()
-                .ofType<ChildEventAdded<String>>()
-    }
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()

@@ -40,7 +40,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
 
-        fun newInstance() = VideoFragment()
+        fun newInstance() =  VideoFragment()
         var CURRENT_WIFI_BSSID = ""
 
         private const val KEY_IN_CHAT = "key:in_chat"
@@ -73,7 +73,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         App.CURRENT_DEVICE_UUID=key
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
+    override fun ShowFirebaiseKey(key: String){
 
+        Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
+    }
     private fun checkOrGetMyFirebaiseKey(){
 
 
@@ -96,7 +99,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             initAlreadyRunningConnection()
         }
         connectButton.setOnClickListener {
-            getPresenter().connect()
+            //getPresenter().connect()
+            getPresenter().startChildVideo()
         }
         pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
