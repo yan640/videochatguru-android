@@ -1,6 +1,5 @@
 package co.netguru.android.chatandroll.feature.main.video
 
-import android.content.Context
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.feature.base.MvpView
@@ -14,6 +13,9 @@ interface VideoFragmentView : MvpView {
     fun getAppContext():Context
     fun saveFirebaseDeviceKey(key: String)
     fun closePairingConfirmationDialog()
+    //fun showPairPhones(PairedPhones : Map<String, String>)
+    fun saveFirebaiseKey(key: String)
+    fun ShowFirebaiseKey(key: String)
     fun showStartRouletteView()
     fun disconnect()
     fun attachService()

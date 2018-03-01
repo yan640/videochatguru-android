@@ -62,15 +62,14 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun startChildVideo() {
         disposables += firebasePairedOnline.connect()
-                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders())
-                .doOnComplete { listenForDisconnectOrders() }
-                .andThen(firebasePairedOnline.setOnlineAndRetrieveRandomDevice())
-                .compose(RxUtils.applyMaybeIoSchedulers())
+                .andThen(firebasePairedOnline.GetRoomId())
+
+                .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
-                        onSuccess = {
+                        onNext = {
                             Timber.d("Next $it")
-                            getView()?.showCamViews()
-                            getView()?.connectTo(it)
+                            //getView()?.showCamViews()
+                            getView()?.ShowFirebaiseKey(it)
                         },
                         onError = {
                             Timber.e(it, "Error while choosing random")
@@ -78,7 +77,7 @@ class VideoFragmentPresenter @Inject constructor(
                         },
                         onComplete = {
                             Timber.d("Done")
-                            getView()?.showCamViews()
+                            //getView()?.showCamViews()
                             getView()?.showNoOneAvailable()
                         }
                 )

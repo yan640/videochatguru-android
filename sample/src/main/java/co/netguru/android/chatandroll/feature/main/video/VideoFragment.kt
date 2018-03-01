@@ -33,6 +33,7 @@ import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.yesButton
 import org.webrtc.PeerConnection
 import timber.log.Timber
+import java.util.*
 
 @SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
@@ -81,6 +82,12 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         App.CURRENT_DEVICE_UUID = key
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
+    override fun ShowFirebaiseKey(key: String){
+
+        Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
+    }
+
+
 
     private fun checkOrGetMyFirebaiseKey() {
         if (SharedPreferences.hasToken(context)) {
@@ -98,18 +105,13 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         (localVideoView.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
-
         if (savedInstanceState?.getBoolean(KEY_IN_CHAT) == true) {
             initAlreadyRunningConnection()
         }
-        if (savedInstanceState != null) {
-            roomUUID = savedInstanceState.getString(KEY_ROOM_UUID, "")
-        }
-
         connectButton.setOnClickListener {
-            getPresenter().connect()
+            //getPresenter().connect()
+            getPresenter().startChildVideo()
         }
-        //getPresenter().getRoomNameForDevice()
         pairButton.setOnClickListener {
             pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
         }
@@ -154,7 +156,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString(KEY_ROOM_UUID,roomUUID)
         if (remoteVideoView.visibility == View.VISIBLE) {
             outState.putBoolean(KEY_IN_CHAT, true)
         }
@@ -178,9 +179,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             error("Unknown permission request code $requestCode")
         }
     }
-
-    override fun getAppContext():Context  = context  // TODO проверить не будет ли источником утечек
-
 
     override fun showPairingStatus() {
         pairButton.isEnabled = false
@@ -308,6 +306,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
 
+
+
     override fun showErrorWhileChoosingForPairing() {
         showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)
     }
@@ -394,9 +394,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             showLookingForPartnerMessage()
             getPresenter().startWifiPair()
             showPairingStatus() // TODO внести ограничение 60сек на pair после которого отменить поиск
-        }
-                ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
+        } ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
+
+
 
 
     private fun showNoPermissionsSnackbar() {
