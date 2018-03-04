@@ -20,6 +20,14 @@
         android:layout_height="match_parent"
         android:visibility="gone"/>
 
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/devicesRecycler"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_gravity="top"
+        android:layout_marginTop="100dp">
+    </android.support.v7.widget.RecyclerView>
+
     <ImageButton
         android:id="@+id/switchCameraButton"
         android:layout_width="wrap_content"
@@ -31,7 +39,7 @@
 
     <Button
         android:id="@+id/connectButton"
-        android:layout_width="@dimen/button_start_width"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="@dimen/splash_screen_vertical_margin"
@@ -49,14 +57,13 @@
         android:text="@string/action_pair"/>
 
 
-
     <LinearLayout
-        android:orientation="horizontal"
+        style="?android:attr/buttonBarButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:gravity="center">
-
+        android:gravity="center"
+        android:orientation="horizontal">
         <Button
             android:id="@+id/parentButton"
             android:layout_width="140dp"
@@ -75,15 +82,13 @@
     </LinearLayout>
 
 
-
-
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:layout_marginBottom="-100dp"
         android:layout_marginTop="@dimen/splash_screen_vertical_margin"
-        android:layout_gravity="center"
         android:visibility="gone"/>
 
     <LinearLayout

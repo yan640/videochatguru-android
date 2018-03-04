@@ -131,6 +131,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         super.onStart()
         service?.hideBackgroundWorkWarning()
         checkPermissionsAndConnect()
+        getPresenter().checkForPairedDevices()
     }
 
     override fun onStop() {
@@ -138,6 +139,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
+
     }
 
     override fun onDestroyView() {

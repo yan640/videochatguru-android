@@ -31,6 +31,8 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         private const val WIFI_PAIRING_PATH = "wifi_pairing_devices/"
         private const val PAIRED_PATH = "paired_devices/"
         private const val DEVICE_TO_ROOM_PATH = "device_to_room/"
+        const val ROOM_DELETED = "ROOM_DELETED"
+
 
     }
 
@@ -132,15 +134,17 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
             firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
                     .child(App.CURRENT_DEVICE_UUID)
                     .rxValueEvents()     // TODO возможно не выводит изначальное состояние, а только после изменений
-                    .filter { it.value!=null }
-                    .map { it.getValue(String::class.java) as String }
+                    .map {
+                        if (it.value != null) {
+                            it.getValue(String::class.java) as String
+                        } else
+                            ROOM_DELETED
+                    }
 
-    fun listenForPairedDevicesInRoom(roomUuid:String): Flowable<ChildEvent<DataSnapshot>> =
+    fun listenForPairedDevicesInRoom(roomUuid: String): Flowable<ChildEvent<DataSnapshot>> =
             firebaseDatabase.getReference(PAIRED_PATH)
                     .child(roomUuid)
                     .rxChildEvents()
-
-
 
 
 }

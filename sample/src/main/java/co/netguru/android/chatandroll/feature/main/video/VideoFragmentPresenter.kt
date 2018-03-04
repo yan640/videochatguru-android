@@ -2,6 +2,7 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import android.content.Context
 import co.netguru.android.chatandroll.app.App
+import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.ChildEventChanged
 import co.netguru.android.chatandroll.common.extension.ChildEventRemoved
@@ -75,7 +76,7 @@ class VideoFragmentPresenter @Inject constructor(
                         onSuccess = {
                             Timber.d("Next $it")
                             //getView()?.showCamViews()
-                            App.CURRENT_ROOM_ID =it
+                            App.CURRENT_ROOM_ID = it
                             connect()
                             getView()?.showFirebaiseKey(it)
                         },
@@ -283,33 +284,32 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    fun getRoomNameForDevice() {
+    fun checkForPairedDevices() {
         disposables += firebasePairingWifi.listenForDeviceToRoom()
                 .compose(RxUtils.applyFlowableIoSchedulers())
+                .doOnNext{app.roomUUID = it}
+                .filter { it!=FirebasePairingWifi.ROOM_DELETED }
+                .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
                 .subscribeBy(
                         onNext = {
-                            app.roomUUID = it
+                          parseListOfPairedDevces(it)
+
                         }
                 )
     }
 
-//    fun getPairedDevices(roomName: String) {
-//        disposables += firebasePairingWifi.listenForPairedDevicesInRoom(roomName)
-//                .compose(RxUtils.applyFlowableIoSchedulers())
-//                .subscribeBy(
-//                        onNext = {
-//                            when (it) {
-//                                is ChildEventAdded<DataSnapshot> ->
-//                                    listOfPairedDevices += it.data
-//                                            .getValue(PairedDevice::class.java) as PairedDevice
-//                                is ChildEventRemoved<DataSnapshot> ->
-//                                    listOfPairedDevices -= it.data
-//                                            .getValue(PairedDevice::class.java) as PairedDevice
-//                                is ChildEventChanged ->
-//                                        listOfPairedDevices.refilter { device -> device.uuid == it.previousChildName }.get(0) = it.data.getValue(PairedDevice::class.java) as PairedDevice
-//                            }
-//                        }
-//                )
-//
-//    }
+    private fun parseListOfPairedDevces(childEvent: ChildEvent<DataSnapshot>) { // TODO проверить
+        val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
+        when (childEvent) {
+            is ChildEventAdded<DataSnapshot> ->
+                listOfPairedDevices += pairedDevice
+            is ChildEventRemoved<DataSnapshot> ->
+                listOfPairedDevices -= pairedDevice
+            is ChildEventChanged<DataSnapshot> ->
+                listOfPairedDevices.filter { it.uuid == pairedDevice.uuid }.map { pairedDevice }
+        }
+        listOfPairedDevices.forEach { Timber.d(it.name) }
+
+        //TODO("Add refreshing UI on list change")
+    }
 }
