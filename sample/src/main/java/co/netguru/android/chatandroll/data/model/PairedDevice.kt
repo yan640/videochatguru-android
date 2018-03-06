@@ -7,4 +7,4 @@ data class PairedDevice(val uuid:String="",
                         val name:String="",
                         val role:String="",
                         val roomName:String="",
-                        val isConfirmed :Boolean=false) // TODO сделать ENUM для role
+                        val whoConfirmed :String="")

@@ -5,17 +5,15 @@ import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
 import co.netguru.android.chatandroll.common.extension.rxValueEvents
-import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
+import co.netguru.android.chatandroll.feature.main.video.VideoFragment
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
 import io.reactivex.Flowable
-import io.reactivex.Maybe
 import io.reactivex.rxkotlin.ofType
-import io.reactivex.rxkotlin.subscribeBy
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,7 +35,8 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
     private val pairingDevicesPath: String
-        get() = WIFI_PAIRING_PATH + "TEST_WIFI"//VideoFragment.CURRENT_WIFI_BSSID
+        get() = WIFI_PAIRING_PATH + VideoFragment.CURRENT_WIFI_BSSID
+    //"TEST_WIFI"//
 
 
     private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model)
@@ -60,7 +59,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         emitter.onComplete()
     }
 
-    fun removerThisDeviceFromFolder(): Completable = Completable.create { emitter ->
+    fun removerThisDeviceFromPairing(): Completable = Completable.create { emitter ->
         pairingReferenceThisDevice.removeValue()
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
@@ -69,7 +68,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     /**
      * Get Flowable with all ready for pairing devices in your wifi
      */
-    fun listenForWaitingDevices(): Flowable<DeviceInfoFirebase> =
+    fun listenPairiFolder(): Flowable<DeviceInfoFirebase> =
             firebaseDatabase.getReference(pairingDevicesPath)
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()
@@ -94,40 +93,44 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         firebaseDatabase.goOnline()
     }
 
-    fun listenForOtherConfirmedPairing(otherDevice: DeviceInfoFirebase): Maybe<PairedDevice> =
-            firebaseDatabase
-                    .getReference(PAIRED_PATH)
+
+    fun listenForOtherConfirmedPairing(otherDevice: DeviceInfoFirebase): Completable =
+            firebaseDatabase.getReference(PAIRED_PATH)
                     .child(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
-                    .rxChildEvents()
-                    .ofType<ChildEventAdded<DataSnapshot>>()
-                    .map { it.data.getValue(PairedDevice::class.java) as PairedDevice }
+                    .rxValueEvents(PairedDevice::class.java)
+                    .doOnNext { Timber.d(" listenForOtherConfirmedPairing onNext = ${it.data}") }
+                    .filter { it.data != null } // обязательно фильтруем на null, первый раз выдает нулевой класс
+                    .map { it.data as PairedDevice }
                     .filter { it.uuid == App.CURRENT_DEVICE_UUID }
                     .firstElement()
+                    .ignoreElement()
+                    .doOnComplete { Timber.d(" listenForOtherConfirmedPairing complete") }
 
 
     private fun choosePairedFolderName(yourUuid: String, otherUuid: String): String {
         return if (yourUuid > otherUuid) yourUuid else otherUuid
     }
 
+
     fun saveOtherDeviceAsPaired(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
         val roomName = choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid)
         firebaseDatabase.getReference(PAIRED_PATH)
                 .child(roomName)
                 .child(otherDevice.uuid)
-                .setValue(PairedDevice(otherDevice.uuid, otherDevice.name, "", roomName, true))
+                .setValue(PairedDevice(otherDevice.uuid, otherDevice.name, "", roomName, App.CURRENT_DEVICE_UUID))
                 .addOnCompleteListener { emitter.onComplete() }
+                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
-    fun saveDeviceToRoom(roomName: String) {
-        val completable = Completable.create { emitter ->
-            firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
-                    .child(App.CURRENT_DEVICE_UUID)
-                    .setValue(roomName)
-                    .addOnCompleteListener { emitter.onComplete() }
-                    .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
-        }
-        completable.compose(RxUtils.applyCompletableIoSchedulers())
-                .subscribeBy(onError = { Timber.d(it.fillInStackTrace()) })
+    fun saveDeviceToRoom(otherDevice: DeviceInfoFirebase): Completable = Completable.create { emitter ->
+        firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
+                .child(App.CURRENT_DEVICE_UUID)
+                .setValue(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
+                .addOnCompleteListener {
+                    Timber.d("Room saved!")
+                    emitter.onComplete()
+                }
+                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
     fun listenForDeviceToRoom(): Flowable<String> =
@@ -146,5 +149,9 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .child(roomUuid)
                     .rxChildEvents()
 
+    fun listenPairingFolder(): Flowable<ChildEvent<DataSnapshot>> =
+            firebaseDatabase.getReference(WIFI_PAIRING_PATH)
+                    .child(VideoFragment.CURRENT_WIFI_BSSID)
+                    .rxChildEvents()
 
 }

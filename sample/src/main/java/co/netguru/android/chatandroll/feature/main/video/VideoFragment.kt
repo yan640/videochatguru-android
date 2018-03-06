@@ -63,7 +63,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private lateinit var serviceConnection: ServiceConnection
 
-    private lateinit var confirmationDialog: AlertDialog
+    private var confirmationDialog: AlertDialog? = null
 
     override fun getLayoutId() = R.layout.fragment_video
 
@@ -88,10 +88,12 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
         }
     }
-    override fun showFirebaiseKey(key: String){
+
+    override fun showFirebaiseKey(key: String) {
 
         Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
     }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         checkOrGetMyFirebaiseKey()
@@ -131,7 +133,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         super.onStart()
         service?.hideBackgroundWorkWarning()
         checkPermissionsAndConnect()
-        getPresenter().checkForPairedDevices()
+        getPresenter().onStart()
     }
 
     override fun onStop() {
@@ -139,6 +141,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
+        getPresenter().onStop()
 
     }
 
@@ -176,6 +179,36 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
     }
 
+
+    override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
+        confirmationDialog?.cancel() // TODO заменить на очередь устойств на сопряжение
+        confirmationDialog = alert("Pair with ${device.name}?") {
+            //TODO из res.strings
+            yesButton { getPresenter().confirmPairingAndWaitForOther(device) }
+            noButton { getPresenter().stopPairing() }
+        }.show()
+        // TODO при нажатии кнопки back -> stopPairing
+    }
+
+    override fun showSetChildNameDialog(device: PairedDevice) {
+        //
+    }
+
+    override fun showSnackbar(message: String) {
+        showSnackbarMessage(message, Snackbar.LENGTH_LONG)
+    }
+
+    override fun showParentChildButtons() {
+        childButton.visibility = View.VISIBLE
+        parentButton.visibility = View.VISIBLE
+    }
+
+    override fun closePairingConfirmationDialog() {
+        confirmationDialog?.cancel()
+        confirmationDialog = null       // TODO возможно излишнее
+        hidePairingStatus()
+    }
+
     override fun showPairingStatus() {
         pairButton.isEnabled = false
         progressBar.visibility = View.VISIBLE
@@ -186,38 +219,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         pairButton.isEnabled = true
         progressBar.visibility = View.GONE
 
-    }
-
-
-    override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
-
-
-        if (::confirmationDialog.isInitialized) { // TODO закрывает диалог на сопряжения и открывает новый при появлении нового устр-ва, заменить на очередь
-            confirmationDialog.cancel()
-            Timber.d("Confirmation dialog closed")
-        }
-        confirmationDialog = alert("Pair with ${device.name}?") {
-            //TODO из res.strings
-            yesButton { getPresenter().confirmPairingAndWaitForOther(device) }
-            noButton {
-                hidePairingStatus()
-                getPresenter().stopPairing() // TODO возможно стоит оставить поиск
-            }
-        }.show()
-    }
-
-    override fun showSetChildNameDialog(device: PairedDevice) {
-        //
-    }
-
-    override fun showParentChildButtons() {
-        childButton.visibility = View.VISIBLE
-        parentButton.visibility = View.VISIBLE
-    }
-
-    override fun closePairingConfirmationDialog() {
-        confirmationDialog.cancel()
-        hidePairingStatus()
     }
 
     override fun attachService() {
@@ -382,10 +383,9 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             showLookingForPartnerMessage()
             getPresenter().startWifiPair()
             showPairingStatus() // TODO внести ограничение 60сек на pair после которого отменить поиск
-        } ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
+        }
+                ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
-
-
 
 
     private fun showNoPermissionsSnackbar() {

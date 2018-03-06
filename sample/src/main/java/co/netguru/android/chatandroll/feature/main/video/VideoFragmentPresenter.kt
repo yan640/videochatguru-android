@@ -17,6 +17,7 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
 import io.reactivex.rxkotlin.plusAssign
 import io.reactivex.rxkotlin.subscribeBy
+import org.jetbrains.anko.collections.forEachWithIndex
 import org.webrtc.PeerConnection
 import timber.log.Timber
 import javax.inject.Inject
@@ -32,12 +33,24 @@ class VideoFragmentPresenter @Inject constructor(
 ) : BasePresenter<VideoFragmentView>() {
 
     private val disposables = CompositeDisposable()
-    private var closeDialogDisposable = Disposables.disposed()
+    private var pairedDisposable = Disposables.disposed()
+
+    private val pairingDisposables = CompositeDisposable()
     private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
-    private var listenForPairedDisposable: Disposable = Disposables.disposed()
+
     private val app: App by lazy { App.get(appContext) }
-    private val listOfPairedDevices = mutableListOf<PairedDevice>()
+    private val listOfPairedDevices = mutableListOf<PairedDevice>() //TODO поменять на Set или предотвратить появления двойников
+    var appState = State.NORMAL
+
+    enum class State {
+        PAIRING,
+        NORMAL
+    }
+
+    private var deviceForConfirm: DeviceInfoFirebase? = null //TODO объеденить в класс или Pair для большей логичности
+    private var pairingConfirmed = false
+
 
     override fun detachView() {
         super.detachView()
@@ -118,18 +131,14 @@ class VideoFragmentPresenter @Inject constructor(
      * and listen for ready in that folder
      */
     fun startWifiPair() {
-        disposables += firebasePairingWifi.connect() // check connection to FDB
+        disposables.clear()
+        pairingDisposables += firebasePairingWifi.connect()
                 .andThen(firebasePairingWifi.addDeviceToPairingFolder())
-                .andThen(firebasePairingWifi.listenForWaitingDevices())
+                .andThen(firebasePairingWifi.listenPairingFolder())
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
-                            Timber.d("Next $it")
-                            getView()?.showPairingConfirmationDialog(it)
-
-                            // При закрытии приложении на другом устройстве закрыть диалог
-                            closeDialogOnOtherDeviceEscaped(it)
-
+                            parsePairingEvents(it)
                         },
                         onError = {
                             Timber.e(it, "Error while finding ready for pairing devices")
@@ -143,76 +152,69 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
-    fun disposeListenerIfPaired(otherDevice: DeviceInfoFirebase) {
-        listenForPairedDisposable = firebasePairingWifi
-                .listenForOtherConfirmedPairing(otherDevice)
-                .ignoreElement() // переобразует Maybe -> Completable
-                .compose(RxUtils.applyCompletableIoSchedulers())
-                .subscribeBy(
-                        onComplete = {
-                            if (!closeDialogDisposable.isDisposed) {
-                                closeDialogDisposable.dispose()
-                            }
 
-                        }
-                )
+    private fun parsePairingEvents(event: ChildEvent<DataSnapshot>) {
+        val device = event.data.getValue(DeviceInfoFirebase::class.java) as DeviceInfoFirebase
+        when (event) {
+            is ChildEventAdded<DataSnapshot> -> {
+                if (device.uuid != App.CURRENT_DEVICE_UUID) {
+                    deviceForConfirm = device
+                    getView()?.showPairingConfirmationDialog(device)
+                    // Сразу же запускаем листнера если другое устройство подтвердило сопряжение
+                    //checkForConfirmationWhilePairing(device)
+                }
+            }
+            is ChildEventRemoved<DataSnapshot> ->
+                if (deviceForConfirm == device) {
+                    getView()?.closePairingConfirmationDialog() //TODO tests
+                    stopPairing()
+                    val msg = "The device ${device.name} has stopped pairing" //TODO from stringRes
+                    getView()?.showSnackbar(msg)
+                    Timber.d(msg)
+                }
+        }
     }
 
-    /**
-     * Закрывает диалог подтверждающий сопряжение, если закрыть приложение на
-     * [otherDevice]
-     */
-    fun closeDialogOnOtherDeviceEscaped(otherDevice: DeviceInfoFirebase) {
-        disposeListenerIfPaired(otherDevice)
-        closeDialogDisposable = firebasePairingWifi
-                .listenForDeviceEscaping(otherDevice)
-                .compose(RxUtils.applyCompletableIoSchedulers())
-                .subscribeBy(
-                        onComplete = {
-                            getView()?.closePairingConfirmationDialog() // TODO  отключить листнера на поиск pairingDevices
-                        }
-                )
-    }
+//    /**
+//     * Проверяет подтверждение сопряжения от другого устройства,
+//     * используется только во время pairing режима TODO возможно стоит заменить на отслеживание в папке on_disconnect
+//     */
+//    private fun checkForConfirmationWhilePairing(device: DeviceInfoFirebase) {
+//        pairingDisposables += firebasePairingWifi.listenForOtherConfirmedPairing(device)
+//
+//                .compose(RxUtils.applyMaybeIoSchedulers())
+//                .subscribeBy(onSuccess = {
+//                    if (deviceForConfirm?.uuid == it.whoConfirmed)
+//                        pairingConfirmed = true
+//                })
+//    }
 
 
     fun confirmPairingAndWaitForOther(otherDevice: DeviceInfoFirebase) {
         getView()?.hidePairingStatus()
-        disposables.clear()
-        if (!listenForPairedDisposable.isDisposed) {
-            listenForPairedDisposable.dispose()
-        }
-        disposables += firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
-                .andThen(firebasePairingWifi.removerThisDeviceFromFolder())
-                .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice))
-                .doOnSuccess { firebasePairingWifi.saveDeviceToRoom(it.roomName) }
-                .compose(RxUtils.applyMaybeIoSchedulers())
+        deviceForConfirm = null
+        pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)  // нет перехода к след Completable
+                .andThen { firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice) }
+                .andThen { firebasePairingWifi.saveDeviceToRoom(otherDevice) }
+                .andThen { firebasePairingWifi.removerThisDeviceFromPairing() }
+                .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
-                        onSuccess = {
-                            Timber.d("You and device ${it.name} paired! ")
-                            getView()?.showParentChildButtons()// TODO вывести устойтво на экран для подключения
-                        }
+                        onComplete = {
+                            getView()?.showSnackbar("You and device ${otherDevice.name} paired!") // TODO to stringRes
+                            pairingDisposables.clear()
+                        },
+                        onError = { TODO("not implemented") }
                 )
     }
 
     fun stopPairing() {
-        firebasePairingWifi.removerThisDeviceFromFolder()
+        getView()?.hidePairingStatus()
+        deviceForConfirm = null
+        pairingDisposables.clear()
+        firebasePairingWifi.removerThisDeviceFromPairing()
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onError = { Timber.d(it.fillInStackTrace()) }
-                )
-    }
-
-
-    fun listenForIncomePairing() {
-        disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
-                .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .subscribeBy(
-                        onNext = {
-                            Timber.d("Disconnect order")
-                            getView()?.showOtherPartyFinished()
-                            disconnect()
-                        }
                 )
     }
 
@@ -284,21 +286,18 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    fun checkForPairedDevices() {
+    private fun listenRoomEvents() {
         disposables += firebasePairingWifi.listenForDeviceToRoom()
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .doOnNext{app.roomUUID = it}
-                .filter { it!=FirebasePairingWifi.ROOM_DELETED }
                 .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
+                .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
-                          parseListOfPairedDevces(it)
-
+                            parseListOfPairedDevices(it)
                         }
                 )
     }
 
-    private fun parseListOfPairedDevces(childEvent: ChildEvent<DataSnapshot>) { // TODO проверить
+    private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) { // TODO проверить
         val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
         when (childEvent) {
             is ChildEventAdded<DataSnapshot> ->
@@ -306,10 +305,28 @@ class VideoFragmentPresenter @Inject constructor(
             is ChildEventRemoved<DataSnapshot> ->
                 listOfPairedDevices -= pairedDevice
             is ChildEventChanged<DataSnapshot> ->
-                listOfPairedDevices.filter { it.uuid == pairedDevice.uuid }.map { pairedDevice }
+                listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it }
         }
-        listOfPairedDevices.forEach { Timber.d(it.name) }
+        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.name}") }
 
         //TODO("Add refreshing UI on list change")
+    }
+
+
+    fun removeDeviceFromList(device: PairedDevice) {
+        Timber.d("Device to remove ${device.name}")
+        listOfPairedDevices.removeIf { it.uuid == device.uuid }
+    }
+
+    fun onStop() {
+        disposables.clear()
+        if (appState == State.PAIRING) {
+            stopPairing()
+        }
+        listOfPairedDevices.clear()
+    }
+
+    fun onStart() {
+        listenRoomEvents()
     }
 }

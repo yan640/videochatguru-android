@@ -29,4 +29,13 @@ abstract class BaseFragment : Fragment() {
             snackbar.show()
         }
     }
+
+    fun showSnackbarMessage(message:String,  @BaseTransientBottomBar.Duration duration: Int) { //TODO DRY
+        view?.let {
+            val snackbar = Snackbar.make(it, message, duration)
+            val layout = snackbar.view as Snackbar.SnackbarLayout
+            layout.setBackgroundColor(context.getColorCompat(R.color.transparent_black))
+            snackbar.show()
+        }
+    }
 }
