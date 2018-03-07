@@ -14,7 +14,6 @@ import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.rxkotlin.ofType
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -97,14 +96,14 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     fun listenForOtherConfirmedPairing(otherDevice: DeviceInfoFirebase): Completable =
             firebaseDatabase.getReference(PAIRED_PATH)
                     .child(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
-                    .rxValueEvents(PairedDevice::class.java)
-                    .doOnNext { Timber.d(" listenForOtherConfirmedPairing onNext = ${it.data}") }
-                    .filter { it.data != null } // обязательно фильтруем на null, первый раз выдает нулевой класс
-                    .map { it.data as PairedDevice }
+                    .rxChildEvents()
+                    .ofType<ChildEventAdded<DataSnapshot>>()
+                    .map { it.data }
+                    .filter { it.value != 0 }
+                    .map { it.getValue(PairedDevice::class.java) as PairedDevice }
                     .filter { it.uuid == App.CURRENT_DEVICE_UUID }
                     .firstElement()
                     .ignoreElement()
-                    .doOnComplete { Timber.d(" listenForOtherConfirmedPairing complete") }
 
 
     private fun choosePairedFolderName(yourUuid: String, otherUuid: String): String {
@@ -126,17 +125,14 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
                 .child(App.CURRENT_DEVICE_UUID)
                 .setValue(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
-                .addOnCompleteListener {
-                    Timber.d("Room saved!")
-                    emitter.onComplete()
-                }
+                .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
     fun listenForDeviceToRoom(): Flowable<String> =
             firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
                     .child(App.CURRENT_DEVICE_UUID)
-                    .rxValueEvents()     // TODO возможно не выводит изначальное состояние, а только после изменений
+                    .rxValueEvents()
                     .map {
                         if (it.value != null) {
                             it.getValue(String::class.java) as String
@@ -144,10 +140,12 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                             ROOM_DELETED
                     }
 
+
     fun listenForPairedDevicesInRoom(roomUuid: String): Flowable<ChildEvent<DataSnapshot>> =
-            firebaseDatabase.getReference(PAIRED_PATH)
-                    .child(roomUuid)
-                    .rxChildEvents()
+        firebaseDatabase.getReference(PAIRED_PATH)
+                .child(roomUuid)
+                .rxChildEvents()
+
 
     fun listenPairingFolder(): Flowable<ChildEvent<DataSnapshot>> =
             firebaseDatabase.getReference(WIFI_PAIRING_PATH)

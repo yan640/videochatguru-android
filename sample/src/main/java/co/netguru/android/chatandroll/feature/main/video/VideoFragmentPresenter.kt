@@ -1,5 +1,6 @@
 package co.netguru.android.chatandroll.feature.main.video
 
+import android.annotation.SuppressLint
 import android.content.Context
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEvent
@@ -49,7 +50,7 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     private var deviceForConfirm: DeviceInfoFirebase? = null //TODO объеденить в класс или Pair для большей логичности
-    private var pairingConfirmed = false
+
 
 
     override fun detachView() {
@@ -160,13 +161,11 @@ class VideoFragmentPresenter @Inject constructor(
                 if (device.uuid != App.CURRENT_DEVICE_UUID) {
                     deviceForConfirm = device
                     getView()?.showPairingConfirmationDialog(device)
-                    // Сразу же запускаем листнера если другое устройство подтвердило сопряжение
-                    //checkForConfirmationWhilePairing(device)
                 }
             }
             is ChildEventRemoved<DataSnapshot> ->
                 if (deviceForConfirm == device) {
-                    getView()?.closePairingConfirmationDialog() //TODO tests
+                    getView()?.closePairingConfirmationDialog()
                     stopPairing()
                     val msg = "The device ${device.name} has stopped pairing" //TODO from stringRes
                     getView()?.showSnackbar(msg)
@@ -175,28 +174,14 @@ class VideoFragmentPresenter @Inject constructor(
         }
     }
 
-//    /**
-//     * Проверяет подтверждение сопряжения от другого устройства,
-//     * используется только во время pairing режима TODO возможно стоит заменить на отслеживание в папке on_disconnect
-//     */
-//    private fun checkForConfirmationWhilePairing(device: DeviceInfoFirebase) {
-//        pairingDisposables += firebasePairingWifi.listenForOtherConfirmedPairing(device)
-//
-//                .compose(RxUtils.applyMaybeIoSchedulers())
-//                .subscribeBy(onSuccess = {
-//                    if (deviceForConfirm?.uuid == it.whoConfirmed)
-//                        pairingConfirmed = true
-//                })
-//    }
-
 
     fun confirmPairingAndWaitForOther(otherDevice: DeviceInfoFirebase) {
         getView()?.hidePairingStatus()
         deviceForConfirm = null
-        pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)  // нет перехода к след Completable
-                .andThen { firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice) }
-                .andThen { firebasePairingWifi.saveDeviceToRoom(otherDevice) }
-                .andThen { firebasePairingWifi.removerThisDeviceFromPairing() }
+        pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
+                .andThen ( firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice)) // критично, в andThen() круглые скобки
+                .andThen ( firebasePairingWifi.saveDeviceToRoom(otherDevice) )
+                .andThen ( firebasePairingWifi.removerThisDeviceFromPairing() )
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
@@ -285,7 +270,10 @@ class VideoFragmentPresenter @Inject constructor(
         }
     }
 
-
+    /**
+     * Отслеживает все события в комнате к котророй привязанно устройство
+     * используется для отображения списка сопряженных устройств
+     */
     private fun listenRoomEvents() {
         disposables += firebasePairingWifi.listenForDeviceToRoom()
                 .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
@@ -297,6 +285,7 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
+    @SuppressLint("NewApi")
     private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) { // TODO проверить
         val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
         when (childEvent) {
@@ -313,6 +302,7 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
+    @SuppressLint("NewApi")
     fun removeDeviceFromList(device: PairedDevice) {
         Timber.d("Device to remove ${device.name}")
         listOfPairedDevices.removeIf { it.uuid == device.uuid }
