@@ -67,7 +67,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun getLayoutId() = R.layout.fragment_video
 
-    override fun retrievePresenter() = App.getApplicationComponent(context).videoFragmentComponent().videoFragmentPresenter()
+    override fun retrievePresenter() = App
+            .getApplicationComponent(context)
+            .videoFragmentComponent()
+            .videoFragmentPresenter()
 
     var service: WebRtcService? = null
 

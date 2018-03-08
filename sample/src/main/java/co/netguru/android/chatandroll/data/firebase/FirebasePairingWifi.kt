@@ -116,7 +116,11 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         firebaseDatabase.getReference(PAIRED_PATH)
                 .child(roomName)
                 .child(otherDevice.uuid)
-                .setValue(PairedDevice(otherDevice.uuid, otherDevice.name, "", roomName, App.CURRENT_DEVICE_UUID))
+                .setValue(PairedDevice(
+                        uuid = otherDevice.uuid,
+                        deviceName = otherDevice.name,
+                        roomName =  roomName,
+                        whoConfirmed = App.CURRENT_DEVICE_UUID))
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }

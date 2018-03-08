@@ -296,7 +296,7 @@ class VideoFragmentPresenter @Inject constructor(
             is ChildEventChanged<DataSnapshot> ->
                 listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it }
         }
-        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.name}") }
+        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
 
         //TODO("Add refreshing UI on list change")
     }
@@ -304,7 +304,7 @@ class VideoFragmentPresenter @Inject constructor(
 
     @SuppressLint("NewApi")
     fun removeDeviceFromList(device: PairedDevice) {
-        Timber.d("Device to remove ${device.name}")
+        Timber.d("Device to remove ${device.deviceName}")
         listOfPairedDevices.removeIf { it.uuid == device.uuid }
     }
 
