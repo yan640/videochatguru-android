@@ -18,7 +18,7 @@ class DeviceViewHolder(val view: View,
         view.deviceNameTextView.text = deviceName
         view.statusTextView.text = status
         view.connectButton.isEnabled = status == "online"  // TODO заменить на enum или keyString
-        view.connectButton.setOnClickListener { onButtonClick }
+        view.connectButton.setOnClickListener { onButtonClick(this) }
     }
 
 

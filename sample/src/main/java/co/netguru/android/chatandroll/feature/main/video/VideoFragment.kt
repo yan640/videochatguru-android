@@ -133,7 +133,17 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             service?.enableMicrophone(enabled)
         }
         devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
+        parentButton.setOnClickListener { getPresenter().parentButtonClicked() }
+        childButton.setOnClickListener { getPresenter().childButtonClicked() }
 
+    }
+
+    override fun setParentButtonEnabled(isEnabled: Boolean) {
+        parentButton.isEnabled = isEnabled
+    }
+
+    override fun setChildButtonEnabled(isEnabled: Boolean) {
+        childButton.isEnabled = isEnabled
     }
 
     override fun onStart() {
@@ -148,8 +158,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
-
-
     }
 
     override fun onDestroyView() {
@@ -198,8 +206,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         // TODO при нажатии кнопки back -> stopPairing
     }
 
-    override fun showSetChildNameDialog(device: PairedDevice) {
-        //
+    override fun showSetChildNameDialog() {
+
     }
 
     override fun showSnackbar(message: String) {
@@ -209,6 +217,11 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     override fun showParentChildButtons() {
         childButton.visibility = View.VISIBLE
         parentButton.visibility = View.VISIBLE
+    }
+
+    override fun hideParentChildButtons() {
+        childButton.visibility = View.GONE
+        parentButton.visibility = View.GONE
     }
 
     override fun closePairingConfirmationDialog() {
@@ -429,7 +442,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun updateDevicesRecycler(devices: List<PairedDevice>) {
-        val adapter = PairedDevicesAdapter(devices){showSnackbar("Clicked ${it.deviceName}")}
+        val adapter = PairedDevicesAdapter(devices,{showSnackbar("Clicked ${it.deviceName}")})
         devicesRecycler.adapter = adapter
     }
 }

@@ -313,11 +313,21 @@ class VideoFragmentPresenter @Inject constructor(
             is ChildEventRemoved<DataSnapshot> ->
                 listOfPairedDevices -= pairedDevice
             is ChildEventChanged<DataSnapshot> ->
-                listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it }
+                listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it } // TODO вылетает на старых API
         }
+        // Проверяем что в списке есть наше устройство и хотябы одно другое
+        if (listOfPairedDevices.any { it.uuid == App.CURRENT_DEVICE_UUID }
+                && listOfPairedDevices.any { it.uuid != App.CURRENT_DEVICE_UUID }) {
+            // Отображаем сопряженые устойства, искючая наше
+            getView()?.updateDevicesRecycler(listOfPairedDevices
+                    .filter { it.uuid != App.CURRENT_DEVICE_UUID })  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы
+            getView()?.showParentChildButtons()
+        } else {
+            getView()?.hideParentChildButtons()
+        }
+
+        // TODO удаляем комнату из базы если там одно устройство или нашу ссылку на комнату если нашего устройства нет в списке
         listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
-        getView()?.updateDevicesRecycler(listOfPairedDevices
-                .filter { it.uuid != App.CURRENT_DEVICE_UUID })
 
     }
 
@@ -332,5 +342,20 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun onViewCreated() {
         getActualDeviceData()
+    }
+
+    fun parentButtonClicked() {
+        getView()?.setParentButtonEnabled(false)
+        getView()?.setChildButtonEnabled(true)
+        // добавить роль в Firebase
+    }
+
+    fun childButtonClicked() {
+        getView()?.setChildButtonEnabled(false)
+        getView()?.setParentButtonEnabled(true)
+        getView()?.showSetChildNameDialog()
+        // вывести сообщение с запрсом имени Ребенка
+        // добавить роль в Firebase
+        // перейти в режим ожидания
     }
 }

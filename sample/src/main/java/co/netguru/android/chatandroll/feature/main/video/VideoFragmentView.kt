@@ -26,8 +26,11 @@ interface VideoFragmentView : MvpView {
     fun hideConnectButtonWithAnimation()
     fun showPairingStatus()
     fun hidePairingStatus()
-    fun showSetChildNameDialog(device: PairedDevice)
+    fun showSetChildNameDialog()
     fun showParentChildButtons()
     fun showSnackbar(message:String)
     fun updateDevicesRecycler(devices: List<PairedDevice>)
+    fun setParentButtonEnabled(isEnabled:Boolean)
+    fun setChildButtonEnabled(isEnabled:Boolean)
+    fun hideParentChildButtons()
 }
