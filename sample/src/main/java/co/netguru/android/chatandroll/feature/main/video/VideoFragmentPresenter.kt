@@ -188,6 +188,7 @@ class VideoFragmentPresenter @Inject constructor(
                         onComplete = {
                             getView()?.showSnackbar("You and device ${otherDevice.name} paired!") // TODO to stringRes
                             pairingDisposables.clear()
+                            getActualDeviceData()
                         },
                         onError = { TODO("not implemented") }
                 )
@@ -200,6 +201,7 @@ class VideoFragmentPresenter @Inject constructor(
         firebasePairingWifi.removerThisDeviceFromPairing()
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
+                        onComplete = { getActualDeviceData() },
                         onError = { Timber.d(it.fillInStackTrace()) }
                 )
     }
@@ -270,21 +272,6 @@ class VideoFragmentPresenter @Inject constructor(
             }
         }
     }
-//
-//    /**
-//     * Отслеживает все события в комнате к котророй привязанно устройство
-//     * используется для отображения списка сопряженных устройств
-//     */
-//    fun listenRoomEvents() {
-//        disposables += firebasePairingWifi.listenForDeviceToRoom()
-//                .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
-//                .compose(RxUtils.applyFlowableIoSchedulers())
-//                .subscribeBy(
-//                        onNext = {
-//                            parseListOfPairedDevices(it)
-//                        }
-//                )
-//    }
 
     /**
      * Получает и отслеживает актуальные данные по данному усторйству из
@@ -293,9 +280,14 @@ class VideoFragmentPresenter @Inject constructor(
     private fun getActualDeviceData() {
         disposables += firebasePairingWifi.connect()
                 .andThen(getDeviceUUid())
-                .doOnSuccess { App.CURRENT_DEVICE_UUID = it }
+                .doOnSuccess {
+                    Timber.d("get device UUID = $it")
+                    App.CURRENT_DEVICE_UUID = it
+                }
                 .flatMapPublisher { firebasePairingWifi.listenForDeviceToRoom(it) }
+                .doOnNext { Timber.d("get Room id = $it") }
                 .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
+                .doOnNext { Timber.d("get paired devise in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
@@ -313,29 +305,24 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     @SuppressLint("NewApi")
-    private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) { // TODO проверить
+    private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) {
         val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
         when (childEvent) {
             is ChildEventAdded<DataSnapshot> ->
                 listOfPairedDevices += pairedDevice
             is ChildEventRemoved<DataSnapshot> ->
-                listOfPairedDevices -= pairedDevice // TODO test
+                listOfPairedDevices -= pairedDevice
             is ChildEventChanged<DataSnapshot> ->
                 listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it }
         }
         listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
-        getView()?.updateDevicesRecycler(listOfPairedDevices)
+        getView()?.updateDevicesRecycler(listOfPairedDevices
+                .filter { it.uuid != App.CURRENT_DEVICE_UUID })
 
     }
 
 
-    @SuppressLint("NewApi")
-    fun removeDeviceFromList(device: PairedDevice) {
-        Timber.d("Device to remove ${device.deviceName}")
-        listOfPairedDevices.removeIf { it.uuid == device.uuid }
-    }
-
-    fun onStop() {
+    fun onDestroyView() {
         disposables.clear()
         if (appState == State.PAIRING) {
             stopPairing()
@@ -343,7 +330,7 @@ class VideoFragmentPresenter @Inject constructor(
         listOfPairedDevices.clear()
     }
 
-    fun onStart() {
-        getActualDeviceData() // TODO возможно перенести в onViewCreated
+    fun onViewCreated() {
+        getActualDeviceData()
     }
 }

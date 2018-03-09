@@ -104,6 +104,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         (localVideoView.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
+        getPresenter().onViewCreated()
+
         if (savedInstanceState?.getBoolean(KEY_IN_CHAT) == true) {
             initAlreadyRunningConnection()
         }
@@ -138,7 +140,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         super.onStart()
         service?.hideBackgroundWorkWarning()
         checkPermissionsAndConnect()
-        getPresenter().onStart()
+
     }
 
     override fun onStop() {
@@ -146,7 +148,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
-        getPresenter().onStop()
+
 
     }
 
@@ -156,6 +158,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             it.detachViews()
             unbindService()
         }
+        getPresenter().onDestroyView()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

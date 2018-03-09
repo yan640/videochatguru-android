@@ -14,7 +14,6 @@ import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.rxkotlin.ofType
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -140,7 +139,6 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
             firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
                     .child(deviceUUID)
                     .rxValueEvents()
-                    .doOnNext { Timber.d("room = $it, uuid = ${App.CURRENT_DEVICE_UUID}") }
                     .map {
                         if (it.value != null) {
                             it.getValue(String::class.java) as String
