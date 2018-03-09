@@ -14,6 +14,7 @@ import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.rxkotlin.ofType
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -119,7 +120,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                 .setValue(PairedDevice(
                         uuid = otherDevice.uuid,
                         deviceName = otherDevice.name,
-                        roomName =  roomName,
+                        roomName = roomName,
                         whoConfirmed = App.CURRENT_DEVICE_UUID))
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
@@ -133,10 +134,13 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
-    fun listenForDeviceToRoom(): Flowable<String> =
+
+
+    fun listenForDeviceToRoom(deviceUUID: String = App.CURRENT_DEVICE_UUID): Flowable<String> =
             firebaseDatabase.getReference(DEVICE_TO_ROOM_PATH)
-                    .child(App.CURRENT_DEVICE_UUID)
+                    .child(deviceUUID)
                     .rxValueEvents()
+                    .doOnNext { Timber.d("room = $it, uuid = ${App.CURRENT_DEVICE_UUID}") }
                     .map {
                         if (it.value != null) {
                             it.getValue(String::class.java) as String
@@ -146,9 +150,9 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
 
     fun listenForPairedDevicesInRoom(roomUuid: String): Flowable<ChildEvent<DataSnapshot>> =
-        firebaseDatabase.getReference(PAIRED_PATH)
-                .child(roomUuid)
-                .rxChildEvents()
+            firebaseDatabase.getReference(PAIRED_PATH)
+                    .child(roomUuid)
+                    .rxChildEvents()
 
 
     fun listenPairingFolder(): Flowable<ChildEvent<DataSnapshot>> =

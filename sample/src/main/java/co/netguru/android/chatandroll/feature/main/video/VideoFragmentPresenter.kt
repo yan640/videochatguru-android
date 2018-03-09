@@ -8,11 +8,13 @@ import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.ChildEventChanged
 import co.netguru.android.chatandroll.common.extension.ChildEventRemoved
 import co.netguru.android.chatandroll.common.util.RxUtils
+import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import com.google.firebase.database.DataSnapshot
+import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
@@ -50,7 +52,6 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     private var deviceForConfirm: DeviceInfoFirebase? = null //TODO объеденить в класс или Pair для большей логичности
-
 
 
     override fun detachView() {
@@ -179,9 +180,9 @@ class VideoFragmentPresenter @Inject constructor(
         getView()?.hidePairingStatus()
         deviceForConfirm = null
         pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
-                .andThen ( firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice)) // критично, в andThen() круглые скобки
-                .andThen ( firebasePairingWifi.saveDeviceToRoom(otherDevice) )
-                .andThen ( firebasePairingWifi.removerThisDeviceFromPairing() )
+                .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice)) // критично, в andThen() круглые скобки
+                .andThen(firebasePairingWifi.saveDeviceToRoom(otherDevice))
+                .andThen(firebasePairingWifi.removerThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
@@ -269,13 +270,31 @@ class VideoFragmentPresenter @Inject constructor(
             }
         }
     }
+//
+//    /**
+//     * Отслеживает все события в комнате к котророй привязанно устройство
+//     * используется для отображения списка сопряженных устройств
+//     */
+//    fun listenRoomEvents() {
+//        disposables += firebasePairingWifi.listenForDeviceToRoom()
+//                .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
+//                .compose(RxUtils.applyFlowableIoSchedulers())
+//                .subscribeBy(
+//                        onNext = {
+//                            parseListOfPairedDevices(it)
+//                        }
+//                )
+//    }
 
     /**
-     * Отслеживает все события в комнате к котророй привязанно устройство
-     * используется для отображения списка сопряженных устройств
+     * Получает и отслеживает актуальные данные по данному усторйству из
+     * SharedPreferences или FirebaseDB
      */
-    private fun listenRoomEvents() {
-        disposables += firebasePairingWifi.listenForDeviceToRoom()
+    private fun getActualDeviceData() {
+        disposables += firebasePairingWifi.connect()
+                .andThen(getDeviceUUid())
+                .doOnSuccess { App.CURRENT_DEVICE_UUID = it }
+                .flatMapPublisher { firebasePairingWifi.listenForDeviceToRoom(it) }
                 .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
@@ -285,6 +304,14 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
+    private fun getDeviceUUid(): Single<String> {
+        return if (SharedPreferences.hasToken(appContext)) {
+            Single.just(SharedPreferences.getToken(appContext))
+        } else {
+            firebasePairedOnline.getMeNewKey()
+        }
+    }
+
     @SuppressLint("NewApi")
     private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) { // TODO проверить
         val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
@@ -292,13 +319,13 @@ class VideoFragmentPresenter @Inject constructor(
             is ChildEventAdded<DataSnapshot> ->
                 listOfPairedDevices += pairedDevice
             is ChildEventRemoved<DataSnapshot> ->
-                listOfPairedDevices -= pairedDevice
+                listOfPairedDevices -= pairedDevice // TODO test
             is ChildEventChanged<DataSnapshot> ->
                 listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it }
         }
         listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
+        getView()?.updateDevicesRecycler(listOfPairedDevices)
 
-        //TODO("Add refreshing UI on list change")
     }
 
 
@@ -317,6 +344,6 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     fun onStart() {
-        listenRoomEvents()
+        getActualDeviceData() // TODO возможно перенести в onViewCreated
     }
 }

@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
+import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.widget.Toast
@@ -28,6 +29,7 @@ import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
+import org.jetbrains.anko.ctx
 import org.jetbrains.anko.noButton
 import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.yesButton
@@ -40,13 +42,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
-
         fun newInstance() = VideoFragment()
         var CURRENT_WIFI_BSSID = ""
 
         private const val KEY_IN_CHAT = "key:in_chat"
-        private const val KEY_ROOM_UUID = "key:room_uuid"
-
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
         private val NECESSARY_PERMISSIONS = arrayOf(
                 Manifest.permission.CAMERA,
@@ -64,18 +63,21 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     private lateinit var serviceConnection: ServiceConnection
 
     private var confirmationDialog: AlertDialog? = null
-
     override fun getLayoutId() = R.layout.fragment_video
+
+
+    var service: WebRtcService? = null
+
+    override val remoteUuid
+        get() = service?.getRemoteUuid()  // TODO проверить где используется
+
+    override lateinit var adapter:PairedDevicesAdapter
 
     override fun retrievePresenter() = App
             .getApplicationComponent(context)
             .videoFragmentComponent()
             .videoFragmentPresenter()
 
-    var service: WebRtcService? = null
-
-    override val remoteUuid
-        get() = service?.getRemoteUuid()  // TODO проверить где используется
 
     override fun saveFirebaseDeviceKey(key: String) {
         SharedPreferences.saveToken(context, key)
@@ -93,13 +95,11 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun showFirebaiseKey(key: String) {
-
         Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        checkOrGetMyFirebaiseKey()
         (buttonPanel.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         (localVideoView.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
@@ -130,6 +130,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         microphoneEnabledToggle.setOnCheckedChangeListener { _, enabled ->
             service?.enableMicrophone(enabled)
         }
+        devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
+
     }
 
     override fun onStart() {
@@ -421,5 +423,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private fun onWebRtcServiceDisconnected() {
         Timber.d("Service disconnected")
+    }
+
+    override fun updateDevicesRecycler(devices: List<PairedDevice>) {
+        val adapter = PairedDevicesAdapter(devices){showSnackbar("Clicked ${it.deviceName}")}
+        devicesRecycler.adapter = adapter
     }
 }

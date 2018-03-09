@@ -6,6 +6,7 @@ import co.netguru.android.chatandroll.feature.base.MvpView
 
 interface VideoFragmentView : MvpView {
     val remoteUuid: String?
+    val adapter: PairedDevicesAdapter
     fun connectTo(uuid: String)
     fun showCamViews()
     fun showPairingConfirmationDialog(device: DeviceInfoFirebase)
@@ -28,4 +29,5 @@ interface VideoFragmentView : MvpView {
     fun showSetChildNameDialog(device: PairedDevice)
     fun showParentChildButtons()
     fun showSnackbar(message:String)
+    fun updateDevicesRecycler(devices: List<PairedDevice>)
 }
