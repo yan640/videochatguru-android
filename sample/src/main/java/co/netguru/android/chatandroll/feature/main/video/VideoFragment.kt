@@ -29,10 +29,9 @@ import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
-import org.jetbrains.anko.ctx
-import org.jetbrains.anko.noButton
+import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
-import org.jetbrains.anko.yesButton
+import org.jetbrains.anko.support.v4.toast
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
@@ -71,7 +70,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     override val remoteUuid
         get() = service?.getRemoteUuid()  // TODO проверить где используется
 
-    override lateinit var adapter:PairedDevicesAdapter
+    override lateinit var adapter: PairedDevicesAdapter
 
     override fun retrievePresenter() = App
             .getApplicationComponent(context)
@@ -133,17 +132,18 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             service?.enableMicrophone(enabled)
         }
         devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
-        parentButton.setOnClickListener { getPresenter().parentButtonClicked() }
-        childButton.setOnClickListener { getPresenter().childButtonClicked() }
+        parenRoletButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
+        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
+        childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
 
     }
 
     override fun setParentButtonEnabled(isEnabled: Boolean) {
-        parentButton.isEnabled = isEnabled
+        parenRoletButton.isEnabled = isEnabled
     }
 
     override fun setChildButtonEnabled(isEnabled: Boolean) {
-        childButton.isEnabled = isEnabled
+        childRoleButton.isEnabled = isEnabled
     }
 
     override fun onStart() {
@@ -206,8 +206,36 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         // TODO при нажатии кнопки back -> stopPairing
     }
 
-    override fun showSetChildNameDialog() {
+    override fun showSetChildNameDialog(currentChildName: String?) {
+        alert("Write the name of child") {
+            customView {
+                verticalLayout {
+                    val childName = editText {
+                        currentChildName?.let { setText(it) }
+                        hint = "child name"
+                        padding = dip(20)
+                    }
+                    yesButton {
+                        if (childName.text.isNotBlank()) {
+                            getPresenter().setChildName(childName.text.toString())
+                            childNameButton.text = childName.text.toString()  // TODO через презентер
+                        }
+                        else
+                            toast("Child name is blank!")
+                    }
+                }
+            }
+        }.show()
 
+    }
+
+    override fun hideChildName() {
+        childNameButton.visibility = View.GONE
+    }
+
+    override fun showChildName(childName: String) {
+        childNameButton.text = childName
+        childNameButton.visibility = View.VISIBLE
     }
 
     override fun showSnackbar(message: String) {
@@ -215,13 +243,13 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun showParentChildButtons() {
-        childButton.visibility = View.VISIBLE
-        parentButton.visibility = View.VISIBLE
+        childRoleButton.visibility = View.VISIBLE
+        parenRoletButton.visibility = View.VISIBLE
     }
 
     override fun hideParentChildButtons() {
-        childButton.visibility = View.GONE
-        parentButton.visibility = View.GONE
+        childRoleButton.visibility = View.GONE
+        parenRoletButton.visibility = View.GONE
     }
 
     override fun closePairingConfirmationDialog() {
@@ -442,7 +470,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun updateDevicesRecycler(devices: List<PairedDevice>) {
-        val adapter = PairedDevicesAdapter(devices,{showSnackbar("Clicked ${it.deviceName}")})
+        val adapter = PairedDevicesAdapter(devices, { showSnackbar("Clicked ${it.deviceName}") })
         devicesRecycler.adapter = adapter
     }
 }

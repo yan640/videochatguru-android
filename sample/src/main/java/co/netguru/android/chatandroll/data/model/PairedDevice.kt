@@ -6,7 +6,7 @@ package co.netguru.android.chatandroll.data.model
 data class PairedDevice(val uuid: String = "",
                         val deviceName: String = "",
                         val role: String = "",
-                        val status: String = "",
-                        val childName: String = "",
-                        val roomName: String = "",
+                        var online: Boolean = false,
+                        var childName: String = "",
+                        val roomUUID: String = "",
                         val whoConfirmed: String = "")

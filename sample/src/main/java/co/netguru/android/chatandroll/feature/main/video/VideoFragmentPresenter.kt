@@ -1,6 +1,5 @@
 package co.netguru.android.chatandroll.feature.main.video
 
-import android.annotation.SuppressLint
 import android.content.Context
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEvent
@@ -44,6 +43,12 @@ class VideoFragmentPresenter @Inject constructor(
 
     private val app: App by lazy { App.get(appContext) }
     private val listOfPairedDevices = mutableListOf<PairedDevice>() //TODO поменять на Set или предотвратить появления двойников
+    val currentDevicePaired
+        get() = listOfPairedDevices.find { it.uuid == App.CURRENT_DEVICE_UUID }
+
+    val listOfOtherDevicePaired
+        get() = listOfPairedDevices.filter { it.uuid != App.CURRENT_DEVICE_UUID }
+
     var appState = State.NORMAL
 
     enum class State {
@@ -285,7 +290,10 @@ class VideoFragmentPresenter @Inject constructor(
                     App.CURRENT_DEVICE_UUID = it
                 }
                 .flatMapPublisher { firebasePairingWifi.listenForDeviceToRoom(it) }
-                .doOnNext { Timber.d("get Room id = $it") }
+                .doOnNext {
+                    app.roomUUID = it
+                    Timber.d("get Room id = $it")
+                }
                 .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
                 .doOnNext { Timber.d("get paired devise in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
@@ -304,7 +312,7 @@ class VideoFragmentPresenter @Inject constructor(
         }
     }
 
-    @SuppressLint("NewApi")
+
     private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) {
         val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
         when (childEvent) {
@@ -312,23 +320,26 @@ class VideoFragmentPresenter @Inject constructor(
                 listOfPairedDevices += pairedDevice
             is ChildEventRemoved<DataSnapshot> ->
                 listOfPairedDevices -= pairedDevice
-            is ChildEventChanged<DataSnapshot> ->
-                listOfPairedDevices.replaceAll { if (it.uuid == pairedDevice.uuid) pairedDevice else it } // TODO вылетает на старых API
+            is ChildEventChanged<DataSnapshot> -> {
+                listOfPairedDevices.removeAll { it.uuid == pairedDevice.uuid }
+                listOfPairedDevices += pairedDevice
+            }
         }
         // Проверяем что в списке есть наше устройство и хотябы одно другое
-        if (listOfPairedDevices.any { it.uuid == App.CURRENT_DEVICE_UUID }
-                && listOfPairedDevices.any { it.uuid != App.CURRENT_DEVICE_UUID }) {
+        if (currentDevicePaired != null
+                && listOfOtherDevicePaired.isNotEmpty()) {
             // Отображаем сопряженые устойства, искючая наше
-            getView()?.updateDevicesRecycler(listOfPairedDevices
-                    .filter { it.uuid != App.CURRENT_DEVICE_UUID })  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы
-            getView()?.showParentChildButtons()
+            getView()?.updateDevicesRecycler(listOfOtherDevicePaired)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы
+            getView()?.showParentChildButtons() //  TODO в зависимотсти от установленной роли отобразить кнопки и childName Button
+            setDeviceOnline()
+            // TODO change online to online (delete value on disconnect)
         } else {
             getView()?.hideParentChildButtons()
         }
 
-        // TODO удаляем комнату из базы если там одно устройство или нашу ссылку на комнату если нашего устройства нет в списке
-        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
+        // TODO удалить комнату из базы если там одно устройство или нашу ссылку на комнату если нашего устройства нет в списке
 
+        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
     }
 
 
@@ -338,24 +349,46 @@ class VideoFragmentPresenter @Inject constructor(
             stopPairing()
         }
         listOfPairedDevices.clear()
+        // TODO online - offline
     }
 
     fun onViewCreated() {
         getActualDeviceData()
     }
 
-    fun parentButtonClicked() {
+    fun parentRoleButtonClicked() {
         getView()?.setParentButtonEnabled(false)
         getView()?.setChildButtonEnabled(true)
+        getView()?.hideChildName()
         // добавить роль в Firebase
     }
 
-    fun childButtonClicked() {
+    fun childRoleButtonClicked() {
         getView()?.setChildButtonEnabled(false)
         getView()?.setParentButtonEnabled(true)
-        getView()?.showSetChildNameDialog()
-        // вывести сообщение с запрсом имени Ребенка
-        // добавить роль в Firebase
-        // перейти в режим ожидания
+        currentDevicePaired?.childName?.let {
+            if (it.isNotBlank()) getView()?.showChildName(it)
+            // перейти в режим ожидания
+        } ?: getView()?.showSetChildNameDialog()
+
+    }
+
+    fun setChildName(childName: String) {
+        currentDevicePaired?.let {
+            it.childName = childName
+            it.online = true
+            firebasePairingWifi.updateThisDeviceData(it)
+        }
+    }
+
+    fun setDeviceOnline() { // TODO make it DRY
+        currentDevicePaired?.let {
+            it.online = true
+            firebasePairingWifi.updateThisDeviceData(it)
+        }
+    }
+
+    fun childNameButtonClicked() {
+        getView()?.showSetChildNameDialog(currentDevicePaired?.childName)
     }
 }

@@ -6,6 +6,15 @@
                                                  android:layout_width="match_parent"
                                                  android:layout_height="match_parent">
 
+    <Button
+        android:id="@+id/childNameButton"
+        android:layout_margin="20dp"
+        android:background="@color/primary_dark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        />
+
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/localVideoView"
         android:layout_width="@dimen/local_video_width"
@@ -39,7 +48,7 @@
 
     <Button
         android:id="@+id/connectButton"
-        android:layout_width="match_parent"
+        android:layout_width="140dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="@dimen/splash_screen_vertical_margin"
@@ -65,17 +74,19 @@
         android:gravity="center"
         android:orientation="horizontal">
         <Button
-            android:id="@+id/parentButton"
-            android:layout_width="140dp"
+            android:id="@+id/parenRoletButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_button"
+            android:layout_margin="20dp"
             android:text="@string/parent"
             android:visibility="gone"/>
 
         <Button
-            android:id="@+id/childButton"
-            android:layout_width="140dp"
+            android:id="@+id/childRoleButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="20dp"
             android:background="@drawable/rounded_button"
             android:text="@string/child"
             android:visibility="gone"/>
