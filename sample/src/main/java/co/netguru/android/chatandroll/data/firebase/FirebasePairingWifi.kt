@@ -1,5 +1,6 @@
 package co.netguru.android.chatandroll.data.firebase
 
+import android.content.Context
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
@@ -8,7 +9,6 @@ import co.netguru.android.chatandroll.common.extension.rxValueEvents
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
-import co.netguru.android.chatandroll.feature.main.video.VideoFragment
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -25,7 +25,8 @@ import javax.inject.Singleton
  * Rewritten by Gleb 21.02.2018
  */
 @Singleton
-class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: FirebaseDatabase) {
+class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: FirebaseDatabase,
+                                              private val appContext: Context ) {
 
     companion object {
         private const val WIFI_PAIRING_PATH = "wifi_pairing_devices/"
@@ -35,22 +36,19 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
     }
 
-
-    private val pairingDevicesPath: String
-        get() = WIFI_PAIRING_PATH + VideoFragment.CURRENT_WIFI_BSSID
-
-
     private val myDevice = DeviceInfoFirebase(App.CURRENT_DEVICE_UUID, App.model)
 
     private lateinit var pairingReferenceThisDevice: DatabaseReference
+    private val app: App by lazy { App.get(appContext) }
 
 
     /**
      * Add you device info to FDB folder [WIFI_PAIRING_PATH]/[CURRENT_WIFI_BSSID]
      */
-    fun addDeviceToPairingFolder(): Completable = Completable.create { emitter ->
+    fun addDeviceToPairingFolder(wifiBSSID: String): Completable = Completable.create { emitter ->
         pairingReferenceThisDevice = firebaseDatabase
-                .getReference(pairingDevicesPath)
+                .getReference(WIFI_PAIRING_PATH)
+                .child(wifiBSSID)
                 .child(App.CURRENT_DEVICE_UUID)
         with(pairingReferenceThisDevice) {
             onDisconnect().removeValue()
@@ -60,31 +58,18 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         emitter.onComplete()
     }
 
+
     fun removerThisDeviceFromPairing(): Completable = Completable.create { emitter ->
         pairingReferenceThisDevice.removeValue()
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
-    /**
-     * Get Flowable with all ready for pairing devices in your wifi
-     */
-    fun listenPairiFolder(): Flowable<DeviceInfoFirebase> =
-            firebaseDatabase.getReference(pairingDevicesPath)
+
+    fun listenPairingFolder(wifiBSSID:String): Flowable<ChildEvent<DataSnapshot>> =
+            firebaseDatabase.getReference(WIFI_PAIRING_PATH)
+                    .child(wifiBSSID)
                     .rxChildEvents()
-                    .ofType<ChildEventAdded<DataSnapshot>>()
-                    .map { it.data.getValue(DeviceInfoFirebase::class.java)!! }
-                    .filter { it != myDevice }
-
-
-    fun listenForDeviceEscaping(device: DeviceInfoFirebase): Completable =
-            firebaseDatabase.getReference(pairingDevicesPath)
-                    .child(device.uuid)
-                    .rxValueEvents()
-                    .filter { it.value == null }  // если null значит значение удалили
-                    .firstElement()
-                    .flatMapCompletable { Completable.complete() }
-
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()    // TODO нужно где-то использовать
@@ -101,11 +86,13 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()
                     .map { it.data }
+                    .doOnNext { Timber.d("listenForOtherConfirmedPairing = $it") }
                     .filter { it.value != 0 }
                     .map { it.getValue(PairedDevice::class.java) as PairedDevice }
                     .filter { it.uuid == App.CURRENT_DEVICE_UUID }
                     .firstElement()
                     .ignoreElement()
+                    .doOnComplete { Timber.d("listenForOtherConfirmedPairing onComplete") }
 
 
     private fun choosePairedFolderName(yourUuid: String, otherUuid: String): String {
@@ -154,11 +141,6 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .child(roomUuid)
                     .rxChildEvents()
 
-
-    fun listenPairingFolder(): Flowable<ChildEvent<DataSnapshot>> =
-            firebaseDatabase.getReference(WIFI_PAIRING_PATH)
-                    .child(VideoFragment.CURRENT_WIFI_BSSID)
-                    .rxChildEvents()
 
     fun updateThisDeviceData(pairedDevice: PairedDevice) {
         Timber.d("updateThisDeviceData = $pairedDevice")

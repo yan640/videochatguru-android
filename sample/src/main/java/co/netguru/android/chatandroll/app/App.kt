@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v7.app.AppCompatDelegate
@@ -27,16 +28,24 @@ class App : Application() {
     companion object Factory {
 
         val BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID = "background_channel"
-        val model = Build.MANUFACTURER +" "+ Build.MODEL
+        val model = Build.MANUFACTURER + " " + Build.MODEL
         var CURRENT_DEVICE_UUID = UUID.randomUUID().toString() // TODO сохранять
         var CURRENT_ROOM_ID = ""
+
         fun get(context: Context): App = context.applicationContext as App
 
         fun getApplicationComponent(context: Context): ApplicationComponent =
                 (context.applicationContext as App).applicationComponent
     }
 
-    lateinit var roomUUID:String
+    lateinit var roomUUID: String
+
+    val CURRENT_WIFI_BSSID: String?
+        get() {
+            val wifiManager = applicationContext
+                    .getSystemService(Context.WIFI_SERVICE) as WifiManager
+            return wifiManager.connectionInfo.bssid
+        }
 
     val applicationComponent: ApplicationComponent by lazy {
         DaggerApplicationComponent.builder()
@@ -60,14 +69,14 @@ class App : Application() {
             //Enables WebRTC Logging
             enableWebRtcLogs(true)
             enableInternalWebRtclogs(Logging.Severity.LS_INFO)
-           // Toast.makeText(this, "Uuid: ${App.CURRENT_DEVICE_UUID}", Toast.LENGTH_LONG).show()
+            // Toast.makeText(this, "Uuid: ${App.CURRENT_DEVICE_UUID}", Toast.LENGTH_LONG).show()
         } else {
             disableWebRtcLogs()
         }
         if (SharedPreferences.hasToken(applicationContext)) {
             CURRENT_DEVICE_UUID = SharedPreferences.getToken(this)
         } else {
-            SharedPreferences.saveToken(this,UUID.randomUUID().toString())
+            SharedPreferences.saveToken(this, UUID.randomUUID().toString())
             CURRENT_DEVICE_UUID = SharedPreferences.getToken(this)
         }
         createNotificationChannels()

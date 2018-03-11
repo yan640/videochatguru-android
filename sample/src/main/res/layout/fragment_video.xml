@@ -9,10 +9,13 @@
     <Button
         android:id="@+id/childNameButton"
         android:layout_margin="20dp"
-        android:background="@color/primary_dark"
-        android:layout_width="wrap_content"
+        android:background="@color/semi_transparent_white"
+        android:layout_width="140dp"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        android:layout_gravity="center_horizontal"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+
         />
 
     <org.webrtc.SurfaceViewRenderer
@@ -74,21 +77,23 @@
         android:gravity="center"
         android:orientation="horizontal">
         <Button
-            android:id="@+id/parenRoletButton"
+            android:id="@+id/parenRoleButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_button"
             android:layout_margin="20dp"
             android:text="@string/parent"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:visibility="gone"/>
 
         <Button
             android:id="@+id/childRoleButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="20dp"
+            android:layout_margin="10dp"
             android:background="@drawable/rounded_button"
             android:text="@string/child"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:visibility="gone"/>
     </LinearLayout>
 

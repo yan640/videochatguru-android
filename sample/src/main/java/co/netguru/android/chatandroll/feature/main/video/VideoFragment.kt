@@ -5,11 +5,9 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
-import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.CoordinatorLayout
@@ -31,6 +29,7 @@ import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
+import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.jetbrains.anko.support.v4.toast
 import org.webrtc.PeerConnection
 import timber.log.Timber
@@ -42,7 +41,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
         fun newInstance() = VideoFragment()
-        var CURRENT_WIFI_BSSID = ""
+
 
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
@@ -62,6 +61,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     private lateinit var serviceConnection: ServiceConnection
 
     private var confirmationDialog: AlertDialog? = null
+    private var chooseRoleDialog: AlertDialog? = null
+    private var pairingProgeressDialog:AlertDialog? =null
     override fun getLayoutId() = R.layout.fragment_video
 
 
@@ -113,7 +114,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             getPresenter().startChildVideo()
         }
         pairButton.setOnClickListener {
-            pairViaSameWifi() // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
+           getPresenter().pairButtonClicked()
         }
 
         disconnectButton.setOnClickListener {
@@ -132,18 +133,24 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             service?.enableMicrophone(enabled)
         }
         devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
-        parenRoletButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
+        parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
         childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
 
     }
 
-    override fun setParentButtonEnabled(isEnabled: Boolean) {
-        parenRoletButton.isEnabled = isEnabled
+    override fun setParentButtonChecked(isChecked: Boolean) {
+        if (isChecked)
+            parenRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
+        else
+            parenRoleButton.backgroundColor = resources.getColor(R.color.primary)
     }
 
-    override fun setChildButtonEnabled(isEnabled: Boolean) {
-        childRoleButton.isEnabled = isEnabled
+    override fun setChildButtonChecked(isChecked: Boolean) {
+        if (isChecked)
+            childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
+        else
+            childRoleButton.backgroundColor = resources.getColor(R.color.primary)
     }
 
     override fun onStart() {
@@ -219,14 +226,34 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                         if (childName.text.isNotBlank()) {
                             getPresenter().setChildName(childName.text.toString())
                             childNameButton.text = childName.text.toString()  // TODO через презентер
-                        }
-                        else
+                        } else
                             toast("Child name is blank!")
                     }
                 }
             }
         }.show()
 
+    }
+
+    override fun showChooseRoleDialog() {
+        if (!(chooseRoleDialog?.isShowing ?: false)) {   // TODO заменить труднопониамемую логику
+            chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
+                title = "Parent or child?"
+                customView {
+                    button("Child") {
+                        setOnClickListener {
+                            getPresenter().childRoleButtonClicked()
+                            chooseRoleDialog?.cancel()
+                        }
+                    }
+                    //button("Parent") {getPresenter().parentRoleButtonClicked() }
+                }
+            }.show()
+        }
+    }
+
+    override fun setPairButtonText(text:String) {
+        pairButton.text = text
     }
 
     override fun hideChildName() {
@@ -244,12 +271,12 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun showParentChildButtons() {
         childRoleButton.visibility = View.VISIBLE
-        parenRoletButton.visibility = View.VISIBLE
+        parenRoleButton.visibility = View.VISIBLE
     }
 
     override fun hideParentChildButtons() {
         childRoleButton.visibility = View.GONE
-        parenRoletButton.visibility = View.GONE
+        parenRoleButton.visibility = View.GONE
     }
 
     override fun closePairingConfirmationDialog() {
@@ -258,16 +285,16 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         hidePairingStatus()
     }
 
-    override fun showPairingStatus() {
-        pairButton.isEnabled = false
-        progressBar.visibility = View.VISIBLE
+    override fun showPairingDialog() {
+       pairingProgeressDialog = indeterminateProgressDialog(
+               "Looking for pairing device...") // TODO добавить stopPAiring onClose
+        pairingProgeressDialog?.show()
+
 
     }
 
     override fun hidePairingStatus() {
-        pairButton.isEnabled = true
-        progressBar.visibility = View.GONE
-
+        pairingProgeressDialog?.cancel()
     }
 
     override fun attachService() {
@@ -285,7 +312,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun attachServiceWifi() {
-        getPresenter().startWifiPair()
+        TODO("attachServiceWifi not impemented, I think it's useless")
+       // getPresenter().startWifiPair()
 //        serviceConnection = object : ServiceConnection {
 //            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
 //                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
@@ -419,21 +447,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
             ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
         }
-    }
-
-    /**
-     * Find pair in same wi-fi
-     */
-    private fun pairViaSameWifi() { // TODO перенести логику работы в Presenter
-        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val bssid = wifiManager.connectionInfo.bssid
-        bssid?.let {
-            CURRENT_WIFI_BSSID = it
-            showLookingForPartnerMessage()
-            getPresenter().startWifiPair()
-            showPairingStatus() // TODO внести ограничение 60сек на pair после которого отменить поиск
-        }
-                ?: Toast.makeText(context, "Connect phones to one Wifi! ", Toast.LENGTH_LONG).show() //TODO заменить на snackBar
     }
 
 

@@ -11,6 +11,7 @@ import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
+import co.netguru.android.chatandroll.data.model.Role
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import com.google.firebase.database.DataSnapshot
 import io.reactivex.Single
@@ -55,6 +56,7 @@ class VideoFragmentPresenter @Inject constructor(
         PAIRING,
         NORMAL
     }
+
 
     private var deviceForConfirm: DeviceInfoFirebase? = null //TODO объеденить в класс или Pair для большей логичности
 
@@ -137,11 +139,11 @@ class VideoFragmentPresenter @Inject constructor(
      * Add your device to FDB folder "wifi_pair_devices/YOUR_WIFI"
      * and listen for ready in that folder
      */
-    fun startWifiPair() {
+    fun startWifiPair(wifiBSSID:String) {
         disposables.clear()
         pairingDisposables += firebasePairingWifi.connect()
-                .andThen(firebasePairingWifi.addDeviceToPairingFolder())
-                .andThen(firebasePairingWifi.listenPairingFolder())
+                .andThen(firebasePairingWifi.addDeviceToPairingFolder(wifiBSSID))
+                .andThen(firebasePairingWifi.listenPairingFolder(wifiBSSID))
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
@@ -328,11 +330,8 @@ class VideoFragmentPresenter @Inject constructor(
         // Проверяем что в списке есть наше устройство и хотябы одно другое
         if (currentDevicePaired != null
                 && listOfOtherDevicePaired.isNotEmpty()) {
-            // Отображаем сопряженые устойства, искючая наше
-            getView()?.updateDevicesRecycler(listOfOtherDevicePaired)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы
-            getView()?.showParentChildButtons() //  TODO в зависимотсти от установленной роли отобразить кнопки и childName Button
             setDeviceOnline()
-            // TODO change online to online (delete value on disconnect)
+            updateUI()
         } else {
             getView()?.hideParentChildButtons()
         }
@@ -343,11 +342,34 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
+    private fun updateUI() = getView()?.run {
+        updateDevicesRecycler(listOfOtherDevicePaired)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
+        showParentChildButtons()
+        setPairButtonText("Unpair")
+        currentDevicePaired?.let {
+            when (it.role) {
+                Role.CHILD -> {
+                    setChildButtonChecked(true)
+                    showChildName(it.childName)
+                }
+                Role.PARENT -> {
+                    setParentButtonChecked(true)
+                    hideChildName()
+                }
+                Role.UNDEFINED -> {
+                    showChooseRoleDialog()
+                    showParentChildButtons()
+                    hideChildName()
+                }
+            }
+        }
+    }
+
+
     fun onDestroyView() {
         disposables.clear()
-        if (appState == State.PAIRING) {
+        if (appState == State.PAIRING)
             stopPairing()
-        }
         listOfPairedDevices.clear()
         // TODO online - offline
     }
@@ -356,36 +378,50 @@ class VideoFragmentPresenter @Inject constructor(
         getActualDeviceData()
     }
 
-    fun parentRoleButtonClicked() {
-        getView()?.setParentButtonEnabled(false)
-        getView()?.setChildButtonEnabled(true)
-        getView()?.hideChildName()
-        // добавить роль в Firebase
+    fun pairButtonClicked() {
+        app.CURRENT_WIFI_BSSID?.let {
+            startWifiPair(it)
+            getView()?.showPairingDialog()
+        } ?: getView()?.showSnackbar("Connect phones to one Wifi!")
+        // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
     }
 
-    fun childRoleButtonClicked() {
-        getView()?.setChildButtonEnabled(false)
-        getView()?.setParentButtonEnabled(true)
-        currentDevicePaired?.childName?.let {
-            if (it.isNotBlank()) getView()?.showChildName(it)
-            // перейти в режим ожидания
-        } ?: getView()?.showSetChildNameDialog()
 
-    }
-
-    fun setChildName(childName: String) {
-        currentDevicePaired?.let {
-            it.childName = childName
-            it.online = true
-            firebasePairingWifi.updateThisDeviceData(it)
+    fun parentRoleButtonClicked() = getView()?.run {
+        setParentButtonChecked(true)
+        setChildButtonChecked(false)
+        hideChildName()
+        currentDevicePaired?.run {
+            role = Role.PARENT
+            firebasePairingWifi.updateThisDeviceData(this)
         }
     }
 
-    fun setDeviceOnline() { // TODO make it DRY
-        currentDevicePaired?.let {
-            it.online = true
-            firebasePairingWifi.updateThisDeviceData(it)
+
+    fun childRoleButtonClicked() = getView()?.run {
+        setChildButtonChecked(true)
+        setParentButtonChecked(false)
+        currentDevicePaired?.run {
+            role = Role.CHILD
+            firebasePairingWifi.updateThisDeviceData(this)
+            if (childName.isNotBlank())
+                showChildName(childName)
+            else
+                showSetChildNameDialog()
         }
+    }
+
+    // TODO make it DRY
+    fun setChildName(childName: String) = currentDevicePaired?.let {
+        it.childName = childName
+        firebasePairingWifi.updateThisDeviceData(it)
+    }
+
+    // TODO make it DRY
+    fun setDeviceOnline() = currentDevicePaired?.let {
+        it.online = true
+        firebasePairingWifi.updateThisDeviceData(it)
+
     }
 
     fun childNameButtonClicked() {
