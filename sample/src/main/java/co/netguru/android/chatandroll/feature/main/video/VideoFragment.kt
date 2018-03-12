@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
+import android.view.Gravity
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.widget.Toast
@@ -62,7 +63,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private var confirmationDialog: AlertDialog? = null
     private var chooseRoleDialog: AlertDialog? = null
-    private var pairingProgeressDialog:AlertDialog? =null
+    private var pairingProgeressDialog: AlertDialog? = null
     override fun getLayoutId() = R.layout.fragment_video
 
 
@@ -114,7 +115,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             getPresenter().startChildVideo()
         }
         pairButton.setOnClickListener {
-           getPresenter().pairButtonClicked()
+            getPresenter().pairButtonClicked()
         }
 
         disconnectButton.setOnClickListener {
@@ -240,19 +241,31 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
                 title = "Parent or child?"
                 customView {
-                    button("Child") {
-                        setOnClickListener {
-                            getPresenter().childRoleButtonClicked()
-                            chooseRoleDialog?.cancel()
+                    linearLayout {
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        button("Child") {
+                            padding = dip(16)
+                            setOnClickListener {
+                                getPresenter().childRoleButtonClicked()
+                                chooseRoleDialog?.cancel()
+                            }
+                        }
+                        button("Parent") {
+                            padding = dip(16)
+                            setOnClickListener {
+                                getPresenter().parentRoleButtonClicked()
+                                chooseRoleDialog?.cancel()
+                            }
                         }
                     }
-                    //button("Parent") {getPresenter().parentRoleButtonClicked() }
                 }
+
+
             }.show()
         }
     }
 
-    override fun setPairButtonText(text:String) {
+    override fun setPairButtonText(text: String) {
         pairButton.text = text
     }
 
@@ -286,8 +299,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun showPairingDialog() {
-       pairingProgeressDialog = indeterminateProgressDialog(
-               "Looking for pairing device...") // TODO добавить stopPAiring onClose
+        pairingProgeressDialog = indeterminateProgressDialog(
+                "Looking for pairing device...") // TODO добавить stopPAiring onClose
         pairingProgeressDialog?.show()
 
 
@@ -313,7 +326,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun attachServiceWifi() {
         TODO("attachServiceWifi not impemented, I think it's useless")
-       // getPresenter().startWifiPair()
+        // getPresenter().startWifiPair()
 //        serviceConnection = object : ServiceConnection {
 //            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
 //                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
