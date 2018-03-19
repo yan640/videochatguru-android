@@ -30,7 +30,7 @@ abstract class BaseFragment : Fragment() {
         }
     }
 
-    fun showSnackbarMessage(message:String,  @BaseTransientBottomBar.Duration duration: Int) { //TODO DRY
+    fun showSnackbarMessage(message:String,  @BaseTransientBottomBar.Duration duration: Int) {
         view?.let {
             val snackbar = Snackbar.make(it, message, duration)
             val layout = snackbar.view as Snackbar.SnackbarLayout

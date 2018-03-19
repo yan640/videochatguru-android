@@ -27,4 +27,6 @@
     <string name="ongoing_call_notification_text">Video chat call is still running in the background</string>
     <string name="parent">Parent</string>
     <string name="child">Child</string>
+    <string name="the_device_has_stopped_pairing">The device %1$s has stopped pairing</string>
+
 </resources>

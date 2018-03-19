@@ -1,6 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import android.content.Context
+import android.util.Log
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
@@ -9,11 +10,12 @@ import co.netguru.android.chatandroll.common.extension.ChildEventRemoved
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.*
-import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
+import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.data.model.Role
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import com.google.firebase.database.DataSnapshot
+import io.reactivex.Completable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -43,14 +45,17 @@ class VideoFragmentPresenter @Inject constructor(
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
 
     private val app: App by lazy { App.get(appContext) }
-    private val listOfPairedDevices = mutableListOf<PairedDevice>() //TODO поменять на Set или предотвратить появления двойников
-    val currentDevicePaired
+
+    private val listOfPairedDevices = mutableListOf<PairedDevice>()
+    private val currentDevicePaired
         get() = listOfPairedDevices.find { it.uuid == App.CURRENT_DEVICE_UUID }
 
-    val listOfOtherDevicePaired
+    private val listOfOtherDevicePaired
         get() = listOfPairedDevices.filter { it.uuid != App.CURRENT_DEVICE_UUID }
 
     var appState = State.NORMAL
+
+    private var isOtherDeviceAddedInPaired: Boolean = false
 
     enum class State {
         PAIRING,
@@ -58,7 +63,7 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    private var deviceForConfirm: DeviceInfoFirebase? = null //TODO объеденить в класс или Pair для большей логичности
+    private var deviceForConfirm: PairingDevice? = null
 
 
     override fun detachView() {
@@ -139,7 +144,8 @@ class VideoFragmentPresenter @Inject constructor(
      * Add your device to FDB folder "wifi_pair_devices/YOUR_WIFI"
      * and listen for ready in that folder
      */
-    fun startWifiPair(wifiBSSID:String) {
+    fun startWifiPairing(wifiBSSID: String) {
+        Log.d("TAG", "wifi pairing")
         disposables.clear()
         pairingDisposables += firebasePairingWifi.connect()
                 .andThen(firebasePairingWifi.addDeviceToPairingFolder(wifiBSSID))
@@ -163,37 +169,37 @@ class VideoFragmentPresenter @Inject constructor(
 
 
     private fun parsePairingEvents(event: ChildEvent<DataSnapshot>) {
-        val device = event.data.getValue(DeviceInfoFirebase::class.java) as DeviceInfoFirebase
+        val device = event.data.getValue(PairingDevice::class.java) as PairingDevice
         when (event) {
             is ChildEventAdded<DataSnapshot> -> {
                 if (device.uuid != App.CURRENT_DEVICE_UUID) {
                     deviceForConfirm = device
+                    getView()?.closePairingProgessDialog()
                     getView()?.showPairingConfirmationDialog(device)
                 }
             }
             is ChildEventRemoved<DataSnapshot> ->
                 if (deviceForConfirm == device) {
-                    getView()?.closePairingConfirmationDialog()
                     stopPairing()
-                    val msg = "The device ${device.name} has stopped pairing" //TODO from stringRes
-                    getView()?.showSnackbar(msg)
-                    Timber.d(msg)
+                    getView()?.showMessageDeviceStoppedPairing(device.name)
                 }
         }
     }
 
 
-    fun confirmPairingAndWaitForOther(otherDevice: DeviceInfoFirebase) {
-        getView()?.hidePairingStatus()
-        deviceForConfirm = null
-        pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
+    fun confirmPairingAndWaitForOther(otherDevice: PairingDevice) {
+        getView()?.closePairingProgessDialog()
+        pairingDisposables += firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
+                .doOnComplete { isOtherDeviceAddedInPaired = true }
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice)) // критично, в andThen() круглые скобки
                 .andThen(firebasePairingWifi.saveDeviceToRoom(otherDevice))
+                .doOnComplete { Timber.d("saveDeviceToRoom(otherDevice) complete") }
                 .andThen(firebasePairingWifi.removerThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
-                            getView()?.showSnackbar("You and device ${otherDevice.name} paired!") // TODO to stringRes
+                            getView()?.showSnackbarFromString("You and device ${otherDevice.name} paired!") // TODO to stringRes
+                            deviceForConfirm = null
                             pairingDisposables.clear()
                             getActualDeviceData()
                         },
@@ -202,15 +208,27 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     fun stopPairing() {
-        getView()?.hidePairingStatus()
-        deviceForConfirm = null
+        getView()?.closePairingProgessDialog()
+        getView()?.closePairingConfirmationDialog()
         pairingDisposables.clear()
-        firebasePairingWifi.removerThisDeviceFromPairing()
+        removeOtherDeviceFromPaired()
+                .andThen(firebasePairingWifi.removerThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
-                        onComplete = { getActualDeviceData() },
+                        onComplete = {
+                            getActualDeviceData()
+                        },
                         onError = { Timber.d(it.fillInStackTrace()) }
                 )
+    }
+
+    private fun removeOtherDeviceFromPaired(): Completable {
+        deviceForConfirm?.let {
+            if (isOtherDeviceAddedInPaired) {
+                return firebasePairingWifi.removerOtherDeviceFromPaired(it)
+            }
+        }
+        return Completable.complete()
     }
 
     fun listenForDisconnectOrders() { // TODO будет disconn при любом добавленом в "should_disconnect
@@ -291,13 +309,12 @@ class VideoFragmentPresenter @Inject constructor(
                     Timber.d("get device UUID = $it")
                     App.CURRENT_DEVICE_UUID = it
                 }
-                .flatMapPublisher { firebasePairingWifi.listenForDeviceToRoom(it) }
+                .flatMapPublisher { firebasePairingWifi.listenForRoomReference(it) }
                 .doOnNext {
-                    app.roomUUID = it
                     Timber.d("get Room id = $it")
                 }
                 .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
-                .doOnNext { Timber.d("get paired devise in room = $it") }
+                .doOnNext { Timber.d("get paired device in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
@@ -380,9 +397,9 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun pairButtonClicked() {
         app.CURRENT_WIFI_BSSID?.let {
-            startWifiPair(it)
-            getView()?.showPairingDialog()
-        } ?: getView()?.showSnackbar("Connect phones to one Wifi!")
+            startWifiPairing(it)
+            getView()?.showPairingProgressDialog()
+        } ?: getView()?.showSnackbarFromString("Connect phones to one Wifi!")
         // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
     }
 
@@ -411,13 +428,13 @@ class VideoFragmentPresenter @Inject constructor(
         }
     }
 
-    // TODO make it DRY
+
     fun setChildName(childName: String) = currentDevicePaired?.let {
         it.childName = childName
         firebasePairingWifi.updateThisDeviceData(it)
     }
 
-    // TODO make it DRY
+
     fun setDeviceOnline() = currentDevicePaired?.let {
         it.online = true
         firebasePairingWifi.updateThisDeviceData(it)

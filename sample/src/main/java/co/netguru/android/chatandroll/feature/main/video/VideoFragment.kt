@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
+import android.support.annotation.StringRes
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
@@ -22,8 +23,8 @@ import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
-import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
+import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
@@ -61,7 +62,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     private lateinit var serviceConnection: ServiceConnection
 
-    private var confirmationDialog: AlertDialog? = null
+    private var pairingConfirmationDialog: AlertDialog? = null
     private var chooseRoleDialog: AlertDialog? = null
     private var pairingProgeressDialog: AlertDialog? = null
     override fun getLayoutId() = R.layout.fragment_video
@@ -174,6 +175,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             it.detachViews()
             unbindService()
         }
+        pairingProgeressDialog?.cancel()
+        pairingConfirmationDialog?.cancel()
         getPresenter().onDestroyView()
     }
 
@@ -183,6 +186,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             outState.putBoolean(KEY_IN_CHAT, true)
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -204,14 +208,20 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
 
-    override fun showPairingConfirmationDialog(device: DeviceInfoFirebase) {
-        confirmationDialog?.cancel() // TODO заменить на очередь устойств на сопряжение
-        confirmationDialog = alert("Pair with ${device.name}?") {
+    override fun showPairingConfirmationDialog(device: PairingDevice) {
+        pairingConfirmationDialog?.cancel() // TODO заменить на очередь устойств на сопряжение
+        pairingConfirmationDialog = alert("Pair with ${device.name}?") {
             //TODO из res.strings
             yesButton { getPresenter().confirmPairingAndWaitForOther(device) }
-            noButton { getPresenter().stopPairing() }
+            noButton {
+                it.cancel()
+                // getPresenter().stopPairing()
+            }
+            onCancelled {
+                it.dismiss()
+                getPresenter().stopPairing()
+            }
         }.show()
-        // TODO при нажатии кнопки back -> stopPairing
     }
 
     override fun showSetChildNameDialog(currentChildName: String?) {
@@ -237,7 +247,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun showChooseRoleDialog() {
-        if (!(chooseRoleDialog?.isShowing ?: false)) {   // TODO заменить труднопониамемую логику
+        if (chooseRoleDialog?.isShowing != true) {
             chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
                 title = "Parent or child?"
                 customView {
@@ -259,8 +269,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                         }
                     }
                 }
-
-
             }.show()
         }
     }
@@ -278,8 +286,12 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         childNameButton.visibility = View.VISIBLE
     }
 
-    override fun showSnackbar(message: String) {
+    override fun showSnackbarFromString(message: String) {
         showSnackbarMessage(message, Snackbar.LENGTH_LONG)
+    }
+
+    override fun showSnackbarFromRes(@StringRes stringRes: Int) {
+        showSnackbarMessage(stringRes, Snackbar.LENGTH_LONG)
     }
 
     override fun showParentChildButtons() {
@@ -293,21 +305,22 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun closePairingConfirmationDialog() {
-        confirmationDialog?.cancel()
-        confirmationDialog = null       // TODO возможно излишнее
-        hidePairingStatus()
+        pairingConfirmationDialog?.cancel()
     }
 
-    override fun showPairingDialog() {
+    override fun showPairingProgressDialog() {
         pairingProgeressDialog = indeterminateProgressDialog(
-                "Looking for pairing device...") // TODO добавить stopPAiring onClose
+                "Looking for pairing device...")
+        pairingProgeressDialog?.setOnCancelListener {
+            it.dismiss()
+            getPresenter().stopPairing()
+        }
         pairingProgeressDialog?.show()
 
-
     }
 
-    override fun hidePairingStatus() {
-        pairingProgeressDialog?.cancel()
+    override fun closePairingProgessDialog() {
+        pairingProgeressDialog?.dismiss()
     }
 
     override fun attachService() {
@@ -326,7 +339,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun attachServiceWifi() {
         TODO("attachServiceWifi not impemented, I think it's useless")
-        // getPresenter().startWifiPair()
+        // getPresenter().startWifiPairing()
 //        serviceConnection = object : ServiceConnection {
 //            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
 //                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
@@ -391,6 +404,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)
     }
 
+    override fun showMessageDeviceStoppedPairing(deviceName:String) {
+        val message = getString(R.string.the_device_has_stopped_pairing,deviceName)
+        showSnackbarMessage(message, Snackbar.LENGTH_LONG)
+    }
 
     override fun showNoOneAvailable() {
         showSnackbarMessage(R.string.msg_no_one_available, Snackbar.LENGTH_LONG)
@@ -496,7 +513,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     override fun updateDevicesRecycler(devices: List<PairedDevice>) {
-        val adapter = PairedDevicesAdapter(devices, { showSnackbar("Clicked ${it.deviceName}") })
+        val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
         devicesRecycler.adapter = adapter
     }
 }

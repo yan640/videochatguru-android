@@ -1,7 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
-import co.netguru.android.chatandroll.data.model.DeviceInfoFirebase
 import co.netguru.android.chatandroll.data.model.PairedDevice
+import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.MvpView
 
 interface VideoFragmentView : MvpView {
@@ -9,7 +9,7 @@ interface VideoFragmentView : MvpView {
     val adapter: PairedDevicesAdapter
     fun connectTo(uuid: String)
     fun showCamViews()
-    fun showPairingConfirmationDialog(device: DeviceInfoFirebase)
+    fun showPairingConfirmationDialog(device: PairingDevice)
     fun saveFirebaseDeviceKey(key: String)
     fun closePairingConfirmationDialog()
     fun showFirebaiseKey(key: String)
@@ -24,11 +24,13 @@ interface VideoFragmentView : MvpView {
     fun showConnectedMsg()
     fun showWillTryToRestartMsg()
     fun hideConnectButtonWithAnimation()
-    fun showPairingDialog()
-    fun hidePairingStatus()
+    fun showPairingProgressDialog()
+    fun closePairingProgessDialog()
     fun showSetChildNameDialog(currentChildName: String? = null)
     fun showParentChildButtons()
-    fun showSnackbar(message:String)
+    fun showSnackbarFromString(message:String)
+    fun showSnackbarFromRes(stringRes: Int)
+    fun showMessageDeviceStoppedPairing(deviceName:String)
     fun updateDevicesRecycler(devices: List<PairedDevice>)
     fun setParentButtonChecked(isChecked:Boolean)
     fun setChildButtonChecked(isChecked:Boolean)

@@ -38,7 +38,7 @@ class App : Application() {
                 (context.applicationContext as App).applicationComponent
     }
 
-    lateinit var roomUUID: String
+   // lateinit var roomUUID: String
 
     val CURRENT_WIFI_BSSID: String?
         get() {

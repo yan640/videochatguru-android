@@ -46,7 +46,7 @@ dependencies {
     compile project(':videochatguru')
     compile  "org.jetbrains.anko:anko:0.10.4"
     compile 'org.jetbrains.kotlin:kotlin-stdlib:1.2.21'
-    implementation "com.android.support:cardview-v7:26.0.1"
+    compile "com.android.support:cardview-v7:27.1.0"
     compile libs.appCompat
     compile libs.design
 
