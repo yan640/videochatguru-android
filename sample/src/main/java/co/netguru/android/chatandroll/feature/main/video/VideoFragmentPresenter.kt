@@ -189,18 +189,19 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun confirmPairingAndWaitForOther(otherDevice: PairingDevice) {
         getView()?.closePairingProgessDialog()
-        pairingDisposables += firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
+        pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
                 .doOnComplete { isOtherDeviceAddedInPaired = true }
                 .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice)) // критично, в andThen() круглые скобки
+                .doOnComplete{pairingDisposables.clear()}
                 .andThen(firebasePairingWifi.saveDeviceToRoom(otherDevice))
-                .doOnComplete { Timber.d("saveDeviceToRoom(otherDevice) complete") }
+              .doOnComplete { Timber.d("saveDeviceToRoom(otherDevice) complete") }
                 .andThen(firebasePairingWifi.removerThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
                             getView()?.showSnackbarFromString("You and device ${otherDevice.name} paired!") // TODO to stringRes
                             deviceForConfirm = null
-                            pairingDisposables.clear()
+                            pairedDisposable.dispose()
                             getActualDeviceData()
                         },
                         onError = { TODO("not implemented") }
