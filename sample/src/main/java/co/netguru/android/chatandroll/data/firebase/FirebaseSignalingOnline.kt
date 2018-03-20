@@ -20,7 +20,7 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
     private fun deviceOnlinePath(deviceUuid: String) ="paired_devices/"+App.CURRENT_ROOM_ID +"/"+ ONLINE_DEVICES_PATH+deviceUuid
 
     fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {
-        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
+        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.THIS_DEVICE_UUID))
         with(firebaseOnlineReference) {
             onDisconnect().removeValue()
             setValue(RouletteConnectionFirebase())
@@ -46,7 +46,7 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
                 val availableDevices = mutableData.getValue(genericTypeIndicator) ?:
                         return Transaction.success(mutableData)
 
-                val removedSelfValue = availableDevices.remove(App.CURRENT_DEVICE_UUID)
+                val removedSelfValue = availableDevices.remove(App.THIS_DEVICE_UUID)
 
                 if (removedSelfValue != null && !availableDevices.isEmpty()) {
                     lastUuid = deleteRandomDevice(availableDevices)

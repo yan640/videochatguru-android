@@ -22,20 +22,20 @@ class FirebaseNewRoom @Inject constructor(private val firebaseDatabase: Firebase
 
     fun setOnlineAndRetrieveRandomDevice(NewPhone: String) {
 
-        var firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
+        var firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.THIS_DEVICE_UUID))
         with(firebaseOnlineReference) {
 
-            setValue(App.CURRENT_DEVICE_UUID)
+            setValue(App.THIS_DEVICE_UUID)
         }
         firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(NewPhone))
         with(firebaseOnlineReference) {
 
-            setValue(App.CURRENT_DEVICE_UUID)
+            setValue(App.THIS_DEVICE_UUID)
         }
         firebaseOnlineReference = firebaseDatabase.getReference(ROOMS)
         with(firebaseOnlineReference) {
 
-            setValue(App.CURRENT_DEVICE_UUID)
+            setValue(App.THIS_DEVICE_UUID)
         }
 
     }

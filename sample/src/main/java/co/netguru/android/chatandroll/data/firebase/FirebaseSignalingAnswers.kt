@@ -28,7 +28,7 @@ class FirebaseSignalingAnswers @Inject constructor(private val firebaseDatabase:
     }
 
     fun listenForNewAnswers(): Flowable<SessionDescription> {
-        return Single.just { firebaseDatabase.getReference(deviceAnswersPath(App.CURRENT_DEVICE_UUID)) }
+        return Single.just { firebaseDatabase.getReference(deviceAnswersPath(App.THIS_DEVICE_UUID)) }
                 .flatMapPublisher { it().rxValueEvents(SessionDescriptionFirebase::class.java) }
                 .flatMapMaybe { it.data.toMaybe() }
                 .map { it.toSessionDescription() }

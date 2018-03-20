@@ -29,27 +29,27 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                                               private val appContext: Context) {
 
     companion object {
-        private const val WIFI_PAIRING_PATH = "wifi_pairing_devices/"
-        private const val PAIRED_ROOMS_PATH = "paired_rooms_devices/"
+        private const val PAIRING_PATH = "pairing/"
+        private const val PAIRED_ROOMS_PATH = "paired_rooms/"
         private const val ROOM_REFERENCE_PATH = "room_reference/"
         const val ROOM_DELETED = "ROOM_DELETED"
 
     }
 
-    private val myDevice = PairingDevice(App.CURRENT_DEVICE_UUID, App.model)
+    private val myDevice = PairingDevice(App.THIS_DEVICE_UUID, App.model)
 
     private lateinit var pairingReferenceThisDevice: DatabaseReference
     private val app: App by lazy { App.get(appContext) }
 
 
     /**
-     * Add you device info to FDB folder [WIFI_PAIRING_PATH]/[CURRENT_WIFI_BSSID]
+     * Add you device info to Firebase path [PAIRING_PATH]/[CURRENT_WIFI_BSSID]
      */
-    fun addDeviceToPairingFolder(wifiBSSID: String): Completable = Completable.create { emitter ->
+    fun addDeviceToPairing(wifiBSSID: String): Completable = Completable.create { emitter ->
         pairingReferenceThisDevice = firebaseDatabase
-                .getReference(WIFI_PAIRING_PATH)
+                .getReference(PAIRING_PATH)
                 .child(wifiBSSID)
-                .child(App.CURRENT_DEVICE_UUID)
+                .child(App.THIS_DEVICE_UUID)
         with(pairingReferenceThisDevice) {
             onDisconnect().removeValue()
             setValue(myDevice).addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
@@ -58,7 +58,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
 
-    fun removerThisDeviceFromPairing(): Completable = Completable.create { emitter ->
+    fun removeThisDeviceFromPairing(): Completable = Completable.create { emitter ->
         pairingReferenceThisDevice.removeValue()
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
@@ -66,7 +66,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
 
     fun listenPairingFolder(wifiBSSID: String): Flowable<ChildEvent<DataSnapshot>> =
-            firebaseDatabase.getReference(WIFI_PAIRING_PATH)
+            firebaseDatabase.getReference(PAIRING_PATH)
                     .child(wifiBSSID)
                     .rxChildEvents()
 
@@ -79,19 +79,19 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
 
-    fun listenForOtherConfirmedPairing(otherDevice: PairingDevice): Completable =
+    fun listenForPairingCandidateConfirmed(pairingCandidate: PairingDevice): Completable =
             firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
-                    .child(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
+                    .child(choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid))
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()
                     .map { it.data }
-                    .doOnNext { Timber.d("listenForOtherConfirmedPairing = $it") }
+                    .doOnNext { Timber.d("listenForPairingCandidateConfirmed = $it") }
                     .filter { it.value != 0 }
                     .map { it.getValue(PairedDevice::class.java) as PairedDevice }
-                    .filter { it.uuid == App.CURRENT_DEVICE_UUID }
+                    .filter { it.uuid == App.THIS_DEVICE_UUID }
                     .firstElement()
                     .ignoreElement()
-                    .doOnComplete { Timber.d("listenForOtherConfirmedPairing onComplete") }
+                    .doOnComplete { Timber.d("listenForPairingCandidateConfirmed onComplete") }
 
 
     private fun choosePairedFolderName(yourUuid: String, otherUuid: String): String {
@@ -99,22 +99,22 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
 
-    fun saveOtherDeviceAsPaired(otherDevice: PairingDevice): Completable = Completable.create { emitter ->
-        val roomName = choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid)
+    fun saveCandidateAsPaired(pairingCandidate: PairingDevice): Completable = Completable.create { emitter ->
+        val roomName = choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid)
         firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
                 .child(roomName)
-                .child(otherDevice.uuid)
+                .child(pairingCandidate.uuid)
                 .setValue(PairedDevice(
-                        uuid = otherDevice.uuid,
-                        deviceName = otherDevice.name,
+                        uuid = pairingCandidate.uuid,
+                        deviceName = pairingCandidate.name,
                         roomUUID = roomName,
-                        whoConfirmed = App.CURRENT_DEVICE_UUID))
+                        whoConfirmed = App.THIS_DEVICE_UUID))
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
     fun removerOtherDeviceFromPaired(otherDevice: PairingDevice): Completable = Completable.create { emitter ->
-        val roomName = choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid)
+        val roomName = choosePairedFolderName(App.THIS_DEVICE_UUID, otherDevice.uuid)
         firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
                 .child(roomName)
                 .child(otherDevice.uuid)
@@ -124,16 +124,16 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
 
-    fun saveDeviceToRoom(otherDevice: PairingDevice): Completable = Completable.create { emitter ->
+    fun saveDeviceToRoomReference(otherDevice: PairingDevice): Completable = Completable.create { emitter ->
         firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
-                .child(App.CURRENT_DEVICE_UUID)
-                .setValue(choosePairedFolderName(App.CURRENT_DEVICE_UUID, otherDevice.uuid))
+                .child(App.THIS_DEVICE_UUID)
+                .setValue(choosePairedFolderName(App.THIS_DEVICE_UUID, otherDevice.uuid))
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
 
-    fun listenForRoomReference(deviceUUID: String = App.CURRENT_DEVICE_UUID): Flowable<String> =
+    fun listenForRoomReference(deviceUUID: String = App.THIS_DEVICE_UUID): Flowable<String> =
             firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
                     .child(deviceUUID)
                     .rxValueEvents()
@@ -155,7 +155,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         Completable.create { emitter ->
             val reference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
                     .child(pairedDevice.roomUUID)
-                    .child(App.CURRENT_DEVICE_UUID)
+                    .child(App.THIS_DEVICE_UUID)
             reference.setValue(pairedDevice).addOnCompleteListener { emitter.onComplete() }
             reference.child(PairedDevice::online.name).onDisconnect().removeValue() // TODO TEST
             Timber.d("PairedDevice::online.name = ${PairedDevice::online.name}")

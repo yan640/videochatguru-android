@@ -4,7 +4,7 @@ import co.netguru.android.chatandroll.app.App
 import org.webrtc.SessionDescription
 
 
-data class SessionDescriptionFirebase(val senderUuid: String = App.CURRENT_DEVICE_UUID,
+data class SessionDescriptionFirebase(val senderUuid: String = App.THIS_DEVICE_UUID,
                                       val type: SessionDescription.Type? = null,
                                       val description: String? = null) {
     companion object {

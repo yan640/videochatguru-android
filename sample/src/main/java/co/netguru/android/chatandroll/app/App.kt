@@ -6,10 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.Build
-import android.support.v4.app.NotificationManagerCompat
 import android.support.v7.app.AppCompatDelegate
-import android.util.Log
-import android.widget.Toast
 import co.netguru.videochatguru.disableWebRtcLogs
 import co.netguru.videochatguru.enableInternalWebRtclogs
 import co.netguru.videochatguru.enableWebRtcLogs
@@ -29,7 +26,7 @@ class App : Application() {
 
         val BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID = "background_channel"
         val model = Build.MANUFACTURER + " " + Build.MODEL
-        var CURRENT_DEVICE_UUID = UUID.randomUUID().toString() // TODO сохранять
+        var THIS_DEVICE_UUID = UUID.randomUUID().toString() // TODO сохранять
         var CURRENT_ROOM_ID = ""
 
         fun get(context: Context): App = context.applicationContext as App
@@ -69,15 +66,15 @@ class App : Application() {
             //Enables WebRTC Logging
             enableWebRtcLogs(true)
             enableInternalWebRtclogs(Logging.Severity.LS_INFO)
-            // Toast.makeText(this, "Uuid: ${App.CURRENT_DEVICE_UUID}", Toast.LENGTH_LONG).show()
+            // Toast.makeText(this, "Uuid: ${App.THIS_DEVICE_UUID}", Toast.LENGTH_LONG).show()
         } else {
             disableWebRtcLogs()
         }
         if (SharedPreferences.hasToken(applicationContext)) {
-            CURRENT_DEVICE_UUID = SharedPreferences.getToken(this)
+            THIS_DEVICE_UUID = SharedPreferences.getToken(this)
         } else {
             SharedPreferences.saveToken(this, UUID.randomUUID().toString())
-            CURRENT_DEVICE_UUID = SharedPreferences.getToken(this)
+            THIS_DEVICE_UUID = SharedPreferences.getToken(this)
         }
         createNotificationChannels()
     }

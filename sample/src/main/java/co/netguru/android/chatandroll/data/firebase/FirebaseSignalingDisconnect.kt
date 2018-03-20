@@ -21,7 +21,7 @@ class FirebaseSignalingDisconnect @Inject constructor(private val firebaseDataba
 
     fun sendDisconnectOrderToOtherParty(recipientUuid: String): Completable = Completable.create {
         val reference = firebaseDatabase.getReference(deviceDisconnectPath(recipientUuid))
-        reference.setValue(RouletteDisconnectOrderFirebase(App.CURRENT_DEVICE_UUID)) {
+        reference.setValue(RouletteDisconnectOrderFirebase(App.THIS_DEVICE_UUID)) {
             databaseError, _ ->
             if (databaseError != null) {
                 it.onError(databaseError.toException())
@@ -32,13 +32,13 @@ class FirebaseSignalingDisconnect @Inject constructor(private val firebaseDataba
     }
 
     fun listenForDisconnectOrders(): Flowable<ChildEventAdded<String>> { // ChildEventAdd<Str> ~ Pair<Str,Str>
-        return firebaseDatabase.getReference(deviceDisconnectPath(App.CURRENT_DEVICE_UUID))
+        return firebaseDatabase.getReference(deviceDisconnectPath(App.THIS_DEVICE_UUID))
                 .rxChildEvents()
                 .ofType<ChildEventAdded<String>>() // фильтрует по типу
     }
 
     fun cleanDisconnectOrders(): Completable = Completable.create {
-        val reference = firebaseDatabase.getReference(deviceDisconnectPath(App.CURRENT_DEVICE_UUID))
+        val reference = firebaseDatabase.getReference(deviceDisconnectPath(App.THIS_DEVICE_UUID))
         reference.onDisconnect().removeValue()
         reference.removeValue { databaseError, _ ->
             if (databaseError != null) {

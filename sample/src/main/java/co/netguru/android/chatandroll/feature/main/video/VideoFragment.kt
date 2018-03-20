@@ -82,7 +82,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun saveFirebaseDeviceKey(key: String) {
         SharedPreferences.saveToken(context, key)
-        App.CURRENT_DEVICE_UUID = key
+        App.THIS_DEVICE_UUID = key
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
 

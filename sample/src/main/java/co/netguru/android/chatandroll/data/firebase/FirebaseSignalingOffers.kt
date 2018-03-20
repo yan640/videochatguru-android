@@ -28,7 +28,7 @@ class FirebaseSignalingOffers @Inject constructor(private val firebaseDatabase: 
     }
 
     fun listenForNewOffersWithUuid(): Flowable<Pair<SessionDescription, String>> {
-        return Single.just { firebaseDatabase.getReference(deviceOffersPath(App.CURRENT_DEVICE_UUID)) }
+        return Single.just { firebaseDatabase.getReference(deviceOffersPath(App.THIS_DEVICE_UUID)) }
                 .flatMapPublisher { it().rxValueEvents(SessionDescriptionFirebase::class.java) }
                 .flatMapMaybe { it.data.toMaybe() }
                 .map { Pair(it.toSessionDescription(), it.senderUuid) }

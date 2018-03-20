@@ -1,7 +1,6 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import android.content.Context
-import android.util.Log
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
@@ -37,7 +36,7 @@ class VideoFragmentPresenter @Inject constructor(
         private val firebaseNewRoom: FirebaseNewRoom
 ) : BasePresenter<VideoFragmentView>() {
 
-    private val disposables = CompositeDisposable()
+    private val actualPairedDataDisposables = CompositeDisposable()
     private var pairedDisposable = Disposables.disposed()
 
     private val pairingDisposables = CompositeDisposable()
@@ -48,13 +47,19 @@ class VideoFragmentPresenter @Inject constructor(
 
     private val listOfPairedDevices = mutableListOf<PairedDevice>()
     private val currentDevicePaired
-        get() = listOfPairedDevices.find { it.uuid == App.CURRENT_DEVICE_UUID }
+        get() = listOfPairedDevices.find { it.uuid == App.THIS_DEVICE_UUID }
 
     private val listOfOtherDevicePaired
-        get() = listOfPairedDevices.filter { it.uuid != App.CURRENT_DEVICE_UUID }
+        get() = listOfPairedDevices.filter { it.uuid != App.THIS_DEVICE_UUID }
 
-    var appState = State.NORMAL
 
+    private var pairingCandidate: PairingDevice? = null
+
+
+    /**
+     * Служит для обработки момента, когда otherDevice было уже добавленно в paired этим устройством,
+     * но отменило сопряжение. При этом оно должно удалено из paired
+     */
     private var isOtherDeviceAddedInPaired: Boolean = false
 
     enum class State {
@@ -62,81 +67,39 @@ class VideoFragmentPresenter @Inject constructor(
         NORMAL
     }
 
+    var appState = State.NORMAL
 
-    private var deviceForConfirm: PairingDevice? = null
+
+    //<editor-fold desc="Fragment (View) Lifecycle Events">
+
+    fun onViewCreated() {
+        getActualDeviceData()
+    }
+
+    fun onDestroyView() {
+        actualPairedDataDisposables.clear()
+        if (appState == State.PAIRING)
+            stopPairing()
+        listOfPairedDevices.clear()
+        // TODO online - offline
+    }
 
 
     override fun detachView() {
         super.detachView()
     }
 
-    fun GetKeyFromFirebase() {
-        disposableForRetrieveKey = firebasePairedOnline.connect()
-                .andThen(firebasePairedOnline.getMeNewKey())
-                .compose(RxUtils.applySingleIoSchedulers())
-                .subscribeBy(
-                        onSuccess = {
-                            Timber.d("Next $it")
-                            App.CURRENT_DEVICE_UUID = it
+    //</editor-fold>
 
-                            getView()?.saveFirebaseDeviceKey(it)
-                            disposableForRetrieveKey.dispose()
-//                            getView()?.showCamViews()
-//                            getView()?.connectTo(it)
-                        },
-                        onError = {
-                            Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingForPairing()
-                            disposableForRetrieveKey.dispose()
-                        }
 
-                )
+    //<editor-fold desc="Pairing">
 
-    }
-
-    fun startChildVideo() {
-        disposables += firebasePairedOnline.connect()
-                .andThen(firebasePairedOnline.getRoomId())
-
-                .compose(RxUtils.applySingleIoSchedulers())
-                .subscribeBy(
-                        onSuccess = {
-                            Timber.d("Next $it")
-                            //getView()?.showCamViews()
-                            App.CURRENT_ROOM_ID = it
-                            connect()
-                            getView()?.showFirebaiseKey(it)
-                        },
-                        onError = {
-                            Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingForPairing()
-                        }
-
-                )
-    }
-
-    fun startConnection() {
-        disposables += firebaseSignalingOnline.connect()
-                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
-                .doOnComplete { listenForDisconnectOrders() }
-                .andThen(firebaseSignalingOnline.setOnlineAndRetrieveRandomDevice())
-                .compose(RxUtils.applyMaybeIoSchedulers())
-                .subscribeBy(
-                        onSuccess = {
-                            Timber.d("Next $it")
-                            getView()?.showCamViews()
-                            getView()?.connectTo(it)
-                        },
-                        onError = {
-                            Timber.e(it, "Error while choosing random")
-                            getView()?.showErrorWhileChoosingForPairing()
-                        },
-                        onComplete = {
-                            Timber.d("Done")
-                            getView()?.showCamViews()
-                            getView()?.showNoOneAvailable()
-                        }
-                )
+    fun pairButtonClicked() {
+        app.CURRENT_WIFI_BSSID?.let {
+            startWifiPairing(it)
+            getView()?.showPairingProgressDialog()
+        } ?: getView()?.showSnackbarFromString("Connect phones to one Wifi!")
+        // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
     }
 
 
@@ -144,11 +107,10 @@ class VideoFragmentPresenter @Inject constructor(
      * Add your device to FDB folder "wifi_pair_devices/YOUR_WIFI"
      * and listen for ready in that folder
      */
-    fun startWifiPairing(wifiBSSID: String) {
-        Log.d("TAG", "wifi pairing")
-        disposables.clear()
+    private fun startWifiPairing(wifiBSSID: String) {
+        actualPairedDataDisposables.clear()
         pairingDisposables += firebasePairingWifi.connect()
-                .andThen(firebasePairingWifi.addDeviceToPairingFolder(wifiBSSID))
+                .andThen(firebasePairingWifi.addDeviceToPairing(wifiBSSID))
                 .andThen(firebasePairingWifi.listenPairingFolder(wifiBSSID))
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
@@ -167,19 +129,21 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
-
+    /**
+     * Обрабатывает добавление и удаление устройств в pairing_devices folder во время сопряжения
+     */
     private fun parsePairingEvents(event: ChildEvent<DataSnapshot>) {
         val device = event.data.getValue(PairingDevice::class.java) as PairingDevice
         when (event) {
             is ChildEventAdded<DataSnapshot> -> {
-                if (device.uuid != App.CURRENT_DEVICE_UUID) {
-                    deviceForConfirm = device
+                if (device.uuid != App.THIS_DEVICE_UUID) {
+                    pairingCandidate = device
                     getView()?.closePairingProgessDialog()
                     getView()?.showPairingConfirmationDialog(device)
                 }
             }
             is ChildEventRemoved<DataSnapshot> ->
-                if (deviceForConfirm == device) {
+                if (pairingCandidate == device) {
                     stopPairing()
                     getView()?.showMessageDeviceStoppedPairing(device.name)
                 }
@@ -187,20 +151,19 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    fun confirmPairingAndWaitForOther(otherDevice: PairingDevice) {
-        getView()?.closePairingProgessDialog()
-        pairedDisposable = firebasePairingWifi.saveOtherDeviceAsPaired(otherDevice)
+    fun confirmPairingAndWaitForOther(pairingCandidate: PairingDevice) {
+        pairedDisposable = firebasePairingWifi.saveCandidateAsPaired(pairingCandidate)
                 .doOnComplete { isOtherDeviceAddedInPaired = true }
-                .andThen(firebasePairingWifi.listenForOtherConfirmedPairing(otherDevice)) // критично, в andThen() круглые скобки
-                .doOnComplete{pairingDisposables.clear()}
-                .andThen(firebasePairingWifi.saveDeviceToRoom(otherDevice))
-              .doOnComplete { Timber.d("saveDeviceToRoom(otherDevice) complete") }
-                .andThen(firebasePairingWifi.removerThisDeviceFromPairing())
+                .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) // критично, в andThen() круглые скобки
+                .doOnComplete { pairingDisposables.clear() }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
+                .andThen(firebasePairingWifi.saveDeviceToRoomReference(pairingCandidate))
+                .doOnComplete { Timber.d("saveDeviceToRoomReference(pairingCandidate) complete") }
+                .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
-                            getView()?.showSnackbarFromString("You and device ${otherDevice.name} paired!") // TODO to stringRes
-                            deviceForConfirm = null
+                            getView()?.showSnackbarFromString("You and device ${pairingCandidate.name} paired!") // TODO to stringRes
+                            this.pairingCandidate = null
                             pairedDisposable.dispose()
                             getActualDeviceData()
                         },
@@ -213,7 +176,7 @@ class VideoFragmentPresenter @Inject constructor(
         getView()?.closePairingConfirmationDialog()
         pairingDisposables.clear()
         removeOtherDeviceFromPaired()
-                .andThen(firebasePairingWifi.removerThisDeviceFromPairing())
+                .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
@@ -224,91 +187,28 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
     private fun removeOtherDeviceFromPaired(): Completable {
-        deviceForConfirm?.let {
+        pairingCandidate?.let {
             if (isOtherDeviceAddedInPaired) {
                 return firebasePairingWifi.removerOtherDeviceFromPaired(it)
             }
         }
         return Completable.complete()
     }
-
-    fun listenForDisconnectOrders() { // TODO будет disconn при любом добавленом в "should_disconnect
-        disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
-                .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
-                .compose(RxUtils.applyFlowableIoSchedulers())
-                .subscribeBy(
-                        onNext = {
-                            Timber.d("Disconnect order")
-                            getView()?.showOtherPartyFinished()
-                            disconnect()
-                        }
-                )
-    }
-
-    private fun disconnect() {
-        disposables += firebaseSignalingOnline.disconnect()
-                .compose(RxUtils.applyCompletableIoSchedulers())
-                .subscribeBy(
-                        onError = {
-                            Timber.d(it)
-                        },
-                        onComplete = {
-                            disconnectOrdersSubscription.dispose()
-                            getView()?.disconnect()
-                            getView()?.showStartRouletteView()
-                        }
-                )
-
-    }
-
-    fun connect() = getView()?.run {
-        attachService()
-        showLookingForPartnerMessage()
-        hideConnectButtonWithAnimation()
-    }
+    //</editor-fold>
 
 
-    fun disconnectByUser() {
-        val remoteUuid = getView()?.remoteUuid
-        if (remoteUuid != null) {
-            disposables += firebaseSignalingDisconnect.sendDisconnectOrderToOtherParty(remoteUuid)
-                    .compose(RxUtils.applyCompletableIoSchedulers())
-                    .subscribeBy(
-                            onComplete = {
-                                disconnect()
-                            }
-                    )
-        } else {
-            disconnect()
-        }
-
-    }
-
-    fun connectionStateChange(iceConnectionState: PeerConnection.IceConnectionState) {
-        Timber.d("Ice connection state changed: $iceConnectionState")
-        when (iceConnectionState) {
-            PeerConnection.IceConnectionState.CONNECTED -> {
-                getView()?.showConnectedMsg()
-            }
-            PeerConnection.IceConnectionState.DISCONNECTED -> {
-                getView()?.showWillTryToRestartMsg()
-            }
-            else -> {
-                //no-op for now - could show or hide progress bars or messages on given event
-            }
-        }
-    }
+    //<editor-fold desc="After pairing">
 
     /**
      * Получает и отслеживает актуальные данные по данному усторйству из
      * SharedPreferences или FirebaseDB
      */
     private fun getActualDeviceData() {
-        disposables += firebasePairingWifi.connect()
+        actualPairedDataDisposables += firebasePairingWifi.connect()
                 .andThen(getDeviceUUid())
                 .doOnSuccess {
                     Timber.d("get device UUID = $it")
-                    App.CURRENT_DEVICE_UUID = it
+                    App.THIS_DEVICE_UUID = it
                 }
                 .flatMapPublisher { firebasePairingWifi.listenForRoomReference(it) }
                 .doOnNext {
@@ -383,28 +283,6 @@ class VideoFragmentPresenter @Inject constructor(
         }
     }
 
-
-    fun onDestroyView() {
-        disposables.clear()
-        if (appState == State.PAIRING)
-            stopPairing()
-        listOfPairedDevices.clear()
-        // TODO online - offline
-    }
-
-    fun onViewCreated() {
-        getActualDeviceData()
-    }
-
-    fun pairButtonClicked() {
-        app.CURRENT_WIFI_BSSID?.let {
-            startWifiPairing(it)
-            getView()?.showPairingProgressDialog()
-        } ?: getView()?.showSnackbarFromString("Connect phones to one Wifi!")
-        // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
-    }
-
-
     fun parentRoleButtonClicked() = getView()?.run {
         setParentButtonChecked(true)
         setChildButtonChecked(false)
@@ -445,4 +323,130 @@ class VideoFragmentPresenter @Inject constructor(
     fun childNameButtonClicked() {
         getView()?.showSetChildNameDialog(currentDevicePaired?.childName)
     }
+
+    //</editor-fold>
+
+
+    //<editor-fold desc="WebRTC video">
+
+    fun startChildVideo() {
+        actualPairedDataDisposables += firebasePairedOnline.connect()
+                .andThen(firebasePairedOnline.getRoomId())
+
+                .compose(RxUtils.applySingleIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d("Next $it")
+                            //getView()?.showCamViews()
+                            App.CURRENT_ROOM_ID = it
+                            connect()
+                            getView()?.showFirebaiseKey(it)
+                        },
+                        onError = {
+                            Timber.e(it, "Error while choosing random")
+                            getView()?.showErrorWhileChoosingForPairing()
+                        }
+
+                )
+    }
+
+    fun startConnection() {
+        actualPairedDataDisposables += firebaseSignalingOnline.connect()
+                .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
+                .doOnComplete { listenForDisconnectOrders() }
+                .andThen(firebaseSignalingOnline.setOnlineAndRetrieveRandomDevice())
+                .compose(RxUtils.applyMaybeIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d("Next $it")
+                            getView()?.showCamViews()
+                            getView()?.connectTo(it)
+                        },
+                        onError = {
+                            Timber.e(it, "Error while choosing random")
+                            getView()?.showErrorWhileChoosingForPairing()
+                        },
+                        onComplete = {
+                            Timber.d("Done")
+                            getView()?.showCamViews()
+                            getView()?.showNoOneAvailable()
+                        }
+                )
+    }
+
+
+    fun listenForDisconnectOrders() { // TODO будет disconn при любом добавленом в "should_disconnect
+        disconnectOrdersSubscription = firebaseSignalingDisconnect.cleanDisconnectOrders()
+                .andThen(firebaseSignalingDisconnect.listenForDisconnectOrders())
+                .compose(RxUtils.applyFlowableIoSchedulers())
+                .subscribeBy(
+                        onNext = {
+                            Timber.d("Disconnect order")
+                            getView()?.showOtherPartyFinished()
+                            disconnect()
+                        }
+                )
+    }
+
+    private fun disconnect() {
+        actualPairedDataDisposables += firebaseSignalingOnline.disconnect()
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onError = {
+                            Timber.d(it)
+                        },
+                        onComplete = {
+                            disconnectOrdersSubscription.dispose()
+                            getView()?.disconnect()
+                            getView()?.showStartRouletteView()
+                        }
+                )
+
+    }
+
+    fun connect() = getView()?.run {
+        attachService()
+        showLookingForPartnerMessage()
+        hideConnectButtonWithAnimation()
+    }
+
+
+    fun disconnectByUser() {
+        val remoteUuid = getView()?.remoteUuid
+        if (remoteUuid != null) {
+            actualPairedDataDisposables += firebaseSignalingDisconnect.sendDisconnectOrderToOtherParty(remoteUuid)
+                    .compose(RxUtils.applyCompletableIoSchedulers())
+                    .subscribeBy(
+                            onComplete = {
+                                disconnect()
+                            }
+                    )
+        } else {
+            disconnect()
+        }
+
+    }
+
+    fun connectionStateChange(iceConnectionState: PeerConnection.IceConnectionState) {
+        Timber.d("Ice connection state changed: $iceConnectionState")
+        when (iceConnectionState) {
+            PeerConnection.IceConnectionState.CONNECTED -> {
+                getView()?.showConnectedMsg()
+            }
+            PeerConnection.IceConnectionState.DISCONNECTED -> {
+                getView()?.showWillTryToRestartMsg()
+            }
+            else -> {
+                //no-op for now - could show or hide progress bars or messages on given event
+            }
+        }
+    }
+    //</editor-fold>
+
+
 }
+
+
+
+
+

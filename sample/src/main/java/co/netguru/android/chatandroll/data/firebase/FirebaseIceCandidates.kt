@@ -24,7 +24,7 @@ class FirebaseIceCandidates @Inject constructor(private val firebaseDatabase: Fi
     private fun deviceIceCandidatesPath(uuid: String) = "paired_devices/" +App.CURRENT_ROOM_ID +"/"+ ICE_CANDIDATES_PATH +uuid
 
     fun send(iceCandidate: IceCandidate): Completable = Completable.create {
-        val reference = firebaseDatabase.getReference(deviceIceCandidatesPath(App.CURRENT_DEVICE_UUID))
+        val reference = firebaseDatabase.getReference(deviceIceCandidatesPath(App.THIS_DEVICE_UUID))
         with(reference) {
             onDisconnect().removeValue()
             push().setValue(IceCandidateFirebase.createFromIceCandidate(iceCandidate))
@@ -36,7 +36,7 @@ class FirebaseIceCandidates @Inject constructor(private val firebaseDatabase: Fi
         val iceCandidatesToRemoveList = iceCandidatesToRemove
                 .map { IceCandidateFirebase.createFromIceCandidate(it) }
                 .toMutableList()
-        val reference = firebaseDatabase.getReference(deviceIceCandidatesPath(App.CURRENT_DEVICE_UUID))
+        val reference = firebaseDatabase.getReference(deviceIceCandidatesPath(App.THIS_DEVICE_UUID))
 
         reference.runTransaction(object : Transaction.Handler {
             override fun doTransaction(mutableData: MutableData): Transaction.Result {

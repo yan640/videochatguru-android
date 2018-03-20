@@ -27,7 +27,7 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
     private val firebaseNewPhoneReference by lazy { firebaseDatabase.getReference(PHONE_ROOM) }
 
     fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {
-        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.CURRENT_DEVICE_UUID))
+        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.THIS_DEVICE_UUID))
         with(firebaseOnlineReference) {
             onDisconnect().removeValue()
             setValue(RouletteConnectionFirebase())
@@ -39,7 +39,7 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
 
 
     fun getRoomId(): Single<String>            =
-            firebaseDatabase.getReference(Phone_roomPath(App.CURRENT_DEVICE_UUID))
+            firebaseDatabase.getReference(Phone_roomPath(App.THIS_DEVICE_UUID))
                     .rxSingleValue()
                     .map { it.getValue(String::class.java)!! }
 
@@ -62,7 +62,7 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
                 val availableDevices = mutableData.getValue(genericTypeIndicator) ?:
                 return Transaction.success(mutableData)
 
-                val removedSelfValue = availableDevices.remove(App.CURRENT_DEVICE_UUID)
+                val removedSelfValue = availableDevices.remove(App.THIS_DEVICE_UUID)
 
                 if (removedSelfValue != null && !availableDevices.isEmpty()) {
                     lastUuid = deleteRandomDevice(availableDevices)
