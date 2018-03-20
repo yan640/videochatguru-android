@@ -6,7 +6,6 @@ import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
@@ -87,19 +86,33 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
     }
 
-    private fun checkOrGetMyFirebaiseKey() {
-        if (SharedPreferences.hasToken(context)) {
-            App.CURRENT_DEVICE_UUID = SharedPreferences.getToken(context)
-        } else {
-            getPresenter().GetKeyFromFirebase()
-
-        }
-    }
 
     override fun showFirebaiseKey(key: String) {
         Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
     }
 
+    private fun checkPermissionsAndConnect() {
+        if (context.areAllPermissionsGranted(*NECESSARY_PERMISSIONS)) {
+
+        } else {
+            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WAKE_LOCK,
+                    Manifest.permission.KILL_BACKGROUND_PROCESSES,
+                    Manifest.permission.SEND_SMS,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.GET_ACCOUNTS
+
+            ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
+        }
+    }
+
+    override fun connectionStateChange(iceConnectionState: PeerConnection.IceConnectionState) {
+        getPresenter().connectionStateChange(iceConnectionState)
+    }
+
+
+    //<editor-fold desc="Fragment Lifecycle">
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (buttonPanel.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
@@ -138,21 +151,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
         childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
-
-    }
-
-    override fun setParentButtonChecked(isChecked: Boolean) {
-        if (isChecked)
-            parenRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-        else
-            parenRoleButton.backgroundColor = resources.getColor(R.color.primary)
-    }
-
-    override fun setChildButtonChecked(isChecked: Boolean) {
-        if (isChecked)
-            childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-        else
-            childRoleButton.backgroundColor = resources.getColor(R.color.primary)
     }
 
     override fun onStart() {
@@ -193,21 +191,12 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (!activity.isChangingConfigurations) disconnect()
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) = when (requestCode) {
-        CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE -> {
-            val grantResult = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-            if (grantResult) {
-                checkPermissionsAndConnect()
-            } else {
-                showNoPermissionsSnackbar()
-            }
-        }
-        else -> {
-            error("Unknown permission request code $requestCode")
-        }
-    }
+
+    //</editor-fold>
 
 
+
+    //<editor-fold desc="Dialogs">
     override fun showPairingConfirmationDialog(device: PairingDevice) {
         pairingConfirmationDialog?.cancel() // TODO заменить на очередь устойств на сопряжение
         pairingConfirmationDialog = alert("Pair with ${device.name}?") {
@@ -222,6 +211,10 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                 getPresenter().stopPairing()
             }
         }.show()
+    }
+
+    override fun closePairingConfirmationDialog() {
+        pairingConfirmationDialog?.cancel()
     }
 
     override fun showSetChildNameDialog(currentChildName: String?) {
@@ -273,6 +266,54 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
     }
 
+    override fun showPairingProgressDialog() {
+        pairingProgeressDialog = indeterminateProgressDialog(
+                "Looking for pairing device...")
+        pairingProgeressDialog?.setOnCancelListener {
+            it.dismiss()
+            getPresenter().stopPairing()
+        }
+        pairingProgeressDialog?.show()
+    }
+
+    override fun closePairingProgessDialog() {
+        pairingProgeressDialog?.dismiss()
+    }
+    //</editor-fold>
+
+
+
+    //<editor-fold desc="Buttons">
+
+    override fun hideConnectButtonWithAnimation() {
+        connectButton.animate().scaleX(0f).scaleY(0f)
+                .setInterpolator(OvershootInterpolator())
+                .setDuration(CONNECT_BUTTON_ANIMATION_DURATION_MS)
+                .withStartAction { connectButton.isClickable = false }
+                .withEndAction {
+                    connectButton.isClickable = true
+                    connectButton.visibility = View.GONE
+                    connectButton.scaleX = 1f
+                    connectButton.scaleY = 1f
+                }
+                .start()
+    }
+
+
+    override fun setParentButtonChecked(isChecked: Boolean) {
+        if (isChecked)
+            parenRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
+        else
+            parenRoleButton.backgroundColor = resources.getColor(R.color.primary)
+    }
+
+    override fun setChildButtonChecked(isChecked: Boolean) {
+        if (isChecked)
+            childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
+        else
+            childRoleButton.backgroundColor = resources.getColor(R.color.primary)
+    }
+
     override fun setPairButtonText(text: String) {
         pairButton.text = text
     }
@@ -304,24 +345,34 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         parenRoleButton.visibility = View.GONE
     }
 
-    override fun closePairingConfirmationDialog() {
-        pairingConfirmationDialog?.cancel()
+
+    override fun showCamViews() {
+        buttonPanel.visibility = View.VISIBLE
+        remoteVideoView.visibility = View.VISIBLE
+        localVideoView.visibility = View.VISIBLE
+        connectButton.visibility = View.GONE
+        pairButton.visibility = View.GONE
     }
 
-    override fun showPairingProgressDialog() {
-        pairingProgeressDialog = indeterminateProgressDialog(
-                "Looking for pairing device...")
-        pairingProgeressDialog?.setOnCancelListener {
-            it.dismiss()
-            getPresenter().stopPairing()
-        }
-        pairingProgeressDialog?.show()
 
+    override fun showStartRouletteView() {
+        buttonPanel.visibility = View.GONE
+        remoteVideoView.visibility = View.GONE
+        localVideoView.visibility = View.GONE
+        connectButton.visibility = View.VISIBLE
+        pairButton.visibility = View.VISIBLE
     }
 
-    override fun closePairingProgessDialog() {
-        pairingProgeressDialog?.dismiss()
+    private fun syncButtonsState(service: WebRtcService) {
+        cameraEnabledToggle.isChecked = service.isCameraEnabled()
+        microphoneEnabledToggle.isChecked = service.isMicrophoneEnabled()
     }
+
+    //</editor-fold>
+
+
+
+    //<editor-fold desc="Services">
 
     override fun attachService() {
         serviceConnection = object : ServiceConnection {
@@ -336,6 +387,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
         startAndBindWebRTCService(serviceConnection)
     }
+
 
     override fun attachServiceWifi() {
         TODO("attachServiceWifi not impemented, I think it's useless")
@@ -360,10 +412,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         Timber.e(throwable, "Critical WebRTC service error")
     }
 
-    override fun connectionStateChange(iceConnectionState: PeerConnection.IceConnectionState) {
-        getPresenter().connectionStateChange(iceConnectionState)
-    }
-
     override fun connectTo(uuid: String) {
         service?.offerDevice(uuid)
     }
@@ -381,66 +429,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             context.unbindService(serviceConnection)
             service = null
         }
-    }
-
-    override fun showCamViews() {
-        buttonPanel.visibility = View.VISIBLE
-        remoteVideoView.visibility = View.VISIBLE
-        localVideoView.visibility = View.VISIBLE
-        connectButton.visibility = View.GONE
-        pairButton.visibility = View.GONE
-    }
-
-
-    override fun showStartRouletteView() {
-        buttonPanel.visibility = View.GONE
-        remoteVideoView.visibility = View.GONE
-        localVideoView.visibility = View.GONE
-        connectButton.visibility = View.VISIBLE
-        pairButton.visibility = View.VISIBLE
-    }
-
-    override fun showErrorWhileChoosingForPairing() {
-        showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)
-    }
-
-    override fun showMessageDeviceStoppedPairing(deviceName:String) {
-        val message = getString(R.string.the_device_has_stopped_pairing,deviceName)
-        showSnackbarMessage(message, Snackbar.LENGTH_LONG)
-    }
-
-    override fun showNoOneAvailable() {
-        showSnackbarMessage(R.string.msg_no_one_available, Snackbar.LENGTH_LONG)
-    }
-
-    override fun showLookingForPartnerMessage() {
-        showSnackbarMessage(R.string.msg_looking_for_partner, Snackbar.LENGTH_SHORT)
-    }
-
-    override fun hideConnectButtonWithAnimation() {
-        connectButton.animate().scaleX(0f).scaleY(0f)
-                .setInterpolator(OvershootInterpolator())
-                .setDuration(CONNECT_BUTTON_ANIMATION_DURATION_MS)
-                .withStartAction { connectButton.isClickable = false }
-                .withEndAction {
-                    connectButton.isClickable = true
-                    connectButton.visibility = View.GONE
-                    connectButton.scaleX = 1f
-                    connectButton.scaleY = 1f
-                }
-                .start()
-    }
-
-    override fun showOtherPartyFinished() {
-        showSnackbarMessage(R.string.msg_other_party_finished, Snackbar.LENGTH_SHORT)
-    }
-
-    override fun showConnectedMsg() {
-        showSnackbarMessage(R.string.msg_connected_to_other_party, Snackbar.LENGTH_LONG)
-    }
-
-    override fun showWillTryToRestartMsg() {
-        showSnackbarMessage(R.string.msg_will_try_to_restart_msg, Snackbar.LENGTH_LONG)
     }
 
     private fun initAlreadyRunningConnection() {
@@ -463,22 +451,53 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         WebRtcService.bindService(context, serviceConnection)
     }
 
-    private fun checkPermissionsAndConnect() {
-        if (context.areAllPermissionsGranted(*NECESSARY_PERMISSIONS)) {
-
-        } else {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WAKE_LOCK,
-                    Manifest.permission.KILL_BACKGROUND_PROCESSES,
-                    Manifest.permission.SEND_SMS,
-                    Manifest.permission.ACCESS_NETWORK_STATE,
-                    Manifest.permission.ACCESS_WIFI_STATE,
-                    Manifest.permission.BLUETOOTH,
-                    Manifest.permission.GET_ACCOUNTS
-
-            ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
-        }
+    private fun onWebRtcServiceConnected(service: WebRtcService) {
+        Timber.d("Service connected")
+        this.service = service
+        service.attachLocalView(localVideoView)
+        service.attachRemoteView(remoteVideoView)
+        syncButtonsState(service)
+        service.attachServiceActionsListener(webRtcServiceListener = this)
     }
 
+
+    private fun onWebRtcServiceDisconnected() {
+        Timber.d("Service disconnected")
+    }
+
+    //</editor-fold>
+
+
+
+    //<editor-fold desc="SnackBars">
+    override fun showErrorWhileChoosingForPairing() {
+        showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)
+    }
+
+    override fun showMessageDeviceStoppedPairing(deviceName:String) {
+        val message = getString(R.string.the_device_has_stopped_pairing,deviceName)
+        showSnackbarMessage(message, Snackbar.LENGTH_LONG)
+    }
+
+    override fun showNoOneAvailable() {
+        showSnackbarMessage(R.string.msg_no_one_available, Snackbar.LENGTH_LONG)
+    }
+
+    override fun showLookingForPartnerMessage() {
+        showSnackbarMessage(R.string.msg_looking_for_partner, Snackbar.LENGTH_SHORT)
+    }
+
+    override fun showOtherPartyFinished() {
+        showSnackbarMessage(R.string.msg_other_party_finished, Snackbar.LENGTH_SHORT)
+    }
+
+    override fun showConnectedMsg() {
+        showSnackbarMessage(R.string.msg_connected_to_other_party, Snackbar.LENGTH_LONG)
+    }
+
+    override fun showWillTryToRestartMsg() {
+        showSnackbarMessage(R.string.msg_will_try_to_restart_msg, Snackbar.LENGTH_LONG)
+    }
 
     private fun showNoPermissionsSnackbar() {
         view?.let {
@@ -494,26 +513,15 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
     }
 
-    private fun onWebRtcServiceConnected(service: WebRtcService) {
-        Timber.d("Service connected")
-        this.service = service
-        service.attachLocalView(localVideoView)
-        service.attachRemoteView(remoteVideoView)
-        syncButtonsState(service)
-        service.attachServiceActionsListener(webRtcServiceListener = this)
-    }
 
-    private fun syncButtonsState(service: WebRtcService) {
-        cameraEnabledToggle.isChecked = service.isCameraEnabled()
-        microphoneEnabledToggle.isChecked = service.isMicrophoneEnabled()
-    }
+    //</editor-fold>
 
-    private fun onWebRtcServiceDisconnected() {
-        Timber.d("Service disconnected")
-    }
 
+
+    //<editor-fold desc="Recycler">
     override fun updateDevicesRecycler(devices: List<PairedDevice>) {
         val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
         devicesRecycler.adapter = adapter
     }
+    //</editor-fold>
 }
