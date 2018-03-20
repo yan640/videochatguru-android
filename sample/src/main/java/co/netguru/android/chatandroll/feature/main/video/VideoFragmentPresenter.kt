@@ -73,7 +73,7 @@ class VideoFragmentPresenter @Inject constructor(
     //<editor-fold desc="Fragment (View) Lifecycle Events">
 
     fun onViewCreated() {
-        getActualDeviceData()
+        getDataFromServer()
     }
 
     fun onDestroyView() {
@@ -146,18 +146,17 @@ class VideoFragmentPresenter @Inject constructor(
                 if (pairingCandidate == device) {
                     stopPairing()
                     getView()?.showMessageDeviceStoppedPairing(device.name)
+                    // TODO вернуть UI в исходное состояние
                 }
         }
     }
 
 
     fun confirmPairingAndWaitForOther(pairingCandidate: PairingDevice) {
-        pairedDisposable = firebasePairingWifi.saveCandidateAsPaired(pairingCandidate)
-                .doOnComplete { isOtherDeviceAddedInPaired = true }
-                .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) // критично, в andThen() круглые скобки
+        pairedDisposable = firebasePairingWifi.saveThisDeviceInPaired(pairingCandidate)
+                .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) //  в andThen() круглые скобки!!!
                 .doOnComplete { pairingDisposables.clear() }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
-                .andThen(firebasePairingWifi.saveDeviceToRoomReference(pairingCandidate))
-                .doOnComplete { Timber.d("saveDeviceToRoomReference(pairingCandidate) complete") }
+                .andThen(firebasePairingWifi.saveRoomReference(pairingCandidate))
                 .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
@@ -165,7 +164,7 @@ class VideoFragmentPresenter @Inject constructor(
                             getView()?.showSnackbarFromString("You and device ${pairingCandidate.name} paired!") // TODO to stringRes
                             this.pairingCandidate = null
                             pairedDisposable.dispose()
-                            getActualDeviceData()
+                            getDataFromServer()
                         },
                         onError = { TODO("not implemented") }
                 )
@@ -175,51 +174,50 @@ class VideoFragmentPresenter @Inject constructor(
         getView()?.closePairingProgessDialog()
         getView()?.closePairingConfirmationDialog()
         pairingDisposables.clear()
-        removeOtherDeviceFromPaired()
+        removeThisDeviceFromPaired()
                 .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
-                            getActualDeviceData()
+                            // TODO вернуть UI вв исходное состояние)
                         },
                         onError = { Timber.d(it.fillInStackTrace()) }
                 )
     }
 
-    private fun removeOtherDeviceFromPaired(): Completable {
+    private fun removeThisDeviceFromPaired(): Completable {
         pairingCandidate?.let {
-            if (isOtherDeviceAddedInPaired) {
-                return firebasePairingWifi.removerOtherDeviceFromPaired(it)
-            }
+            return firebasePairingWifi.removeThisDeviceFromPaired(it)
         }
         return Completable.complete()
     }
+
     //</editor-fold>
 
 
     //<editor-fold desc="After pairing">
 
     /**
-     * Получает и отслеживает актуальные данные по данному усторйству из
+     * Получает и отслеживает актуальные данные доступные данному усторйству из
      * SharedPreferences или FirebaseDB
      */
-    private fun getActualDeviceData() {
+    private fun getDataFromServer() {
         actualPairedDataDisposables += firebasePairingWifi.connect()
                 .andThen(getDeviceUUid())
                 .doOnSuccess {
                     Timber.d("get device UUID = $it")
                     App.THIS_DEVICE_UUID = it
                 }
-                .flatMapPublisher { firebasePairingWifi.listenForRoomReference(it) }
+                .flatMapPublisher { firebasePairingWifi.listenRoomReference(it) }
                 .doOnNext {
                     Timber.d("get Room id = $it")
                 }
-                .flatMap { firebasePairingWifi.listenForPairedDevicesInRoom(it) }
+                .flatMap { firebasePairingWifi.listenRoom(it) }
                 .doOnNext { Timber.d("get paired device in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
-                            parseListOfPairedDevices(it)
+                            updateLocalListOfPairedDevices(it)
                         }
                 )
     }
@@ -233,7 +231,7 @@ class VideoFragmentPresenter @Inject constructor(
     }
 
 
-    private fun parseListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) {
+    private fun updateLocalListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) {
         val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
         when (childEvent) {
             is ChildEventAdded<DataSnapshot> ->
@@ -283,13 +281,27 @@ class VideoFragmentPresenter @Inject constructor(
         }
     }
 
+    private fun pushThisDeviceDataToServer(thisDevice: PairedDevice) {
+        firebasePairingWifi.updateThisDeviceData(thisDevice)
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onComplete = {
+                            Timber.d("Device data in room updated!")
+                        },
+                        onError = {
+                            Timber.d("error while updating device data ${it.fillInStackTrace()}")
+                        }
+                )
+
+    }
+
     fun parentRoleButtonClicked() = getView()?.run {
         setParentButtonChecked(true)
         setChildButtonChecked(false)
         hideChildName()
         currentDevicePaired?.run {
             role = Role.PARENT
-            firebasePairingWifi.updateThisDeviceData(this)
+            pushThisDeviceDataToServer(this)
         }
     }
 
@@ -299,7 +311,7 @@ class VideoFragmentPresenter @Inject constructor(
         setParentButtonChecked(false)
         currentDevicePaired?.run {
             role = Role.CHILD
-            firebasePairingWifi.updateThisDeviceData(this)
+            pushThisDeviceDataToServer(this)
             if (childName.isNotBlank())
                 showChildName(childName)
             else
@@ -310,13 +322,13 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun setChildName(childName: String) = currentDevicePaired?.let {
         it.childName = childName
-        firebasePairingWifi.updateThisDeviceData(it)
+        pushThisDeviceDataToServer(it)
     }
 
 
     fun setDeviceOnline() = currentDevicePaired?.let {
         it.online = true
-        firebasePairingWifi.updateThisDeviceData(it)
+        pushThisDeviceDataToServer(it)
 
     }
 

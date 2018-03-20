@@ -71,8 +71,8 @@
 # Add this global rule
 -keepattributes Signature
 
-# This rule will properly ProGuard all the model classes in
-# the package co.netguru.android.chatandroll.data.model.**
+# This rule will properly ProGuard all the THIS_DEVICE_MODEL classes in
+# the package co.netguru.android.chatandroll.data.THIS_DEVICE_MODEL.**
 -keepclassmembers class co.netguru.android.chatandroll.data.model.** {
   *;
 }

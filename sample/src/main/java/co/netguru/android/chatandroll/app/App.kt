@@ -25,7 +25,7 @@ class App : Application() {
     companion object Factory {
 
         val BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID = "background_channel"
-        val model = Build.MANUFACTURER + " " + Build.MODEL
+        val THIS_DEVICE_MODEL = Build.MANUFACTURER + " " + Build.MODEL
         var THIS_DEVICE_UUID = UUID.randomUUID().toString() // TODO сохранять
         var CURRENT_ROOM_ID = ""
 

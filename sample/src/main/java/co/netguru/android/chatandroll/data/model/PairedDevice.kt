@@ -9,4 +9,4 @@ data class PairedDevice(val uuid: String = "",
                         var online: Boolean = false,
                         var childName: String = "",
                         val roomUUID: String = "",
-                        val whoConfirmed: String = "")
+                        val listOfConfirmedDevices: List<String> = listOf<String>())
