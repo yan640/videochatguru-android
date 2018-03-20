@@ -56,12 +56,6 @@ class VideoFragmentPresenter @Inject constructor(
     private var pairingCandidate: PairingDevice? = null
 
 
-    /**
-     * Служит для обработки момента, когда otherDevice было уже добавленно в paired этим устройством,
-     * но отменило сопряжение. При этом оно должно удалено из paired
-     */
-    private var isOtherDeviceAddedInPaired: Boolean = false
-
     enum class State {
         PAIRING,
         NORMAL
