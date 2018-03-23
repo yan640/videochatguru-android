@@ -8,7 +8,10 @@ import co.netguru.android.chatandroll.common.extension.ChildEventChanged
 import co.netguru.android.chatandroll.common.extension.ChildEventRemoved
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
-import co.netguru.android.chatandroll.data.firebase.*
+import co.netguru.android.chatandroll.data.firebase.FirebasePairedOnline
+import co.netguru.android.chatandroll.data.firebase.FirebasePairingWifi
+import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingDisconnect
+import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingOnline
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.data.model.Role
@@ -32,9 +35,13 @@ class VideoFragmentPresenter @Inject constructor(
         private val firebaseSignalingOnline: FirebaseSignalingOnline,
         private val firebasePairedOnline: FirebasePairedOnline,
         private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
-        private val firebasePairingWifi: FirebasePairingWifi,
-        private val firebaseNewRoom: FirebaseNewRoom
+        private val firebasePairingWifi: FirebasePairingWifi
+
 ) : BasePresenter<VideoFragmentView>() {
+
+    init {
+        Timber.d("${this::class.java.name} is created = ${this.toString()}")
+    }
 
     private val actualPairedDataDisposables = CompositeDisposable()
     private var pairedDisposable = Disposables.disposed()

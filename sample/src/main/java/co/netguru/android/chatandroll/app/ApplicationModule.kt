@@ -24,6 +24,8 @@ class ApplicationModule(private val application: Application) {
     @Singleton
     fun provideApplication() = application
 
+
+
     @Provides
     @Singleton
     fun provideResources(): Resources = application.resources

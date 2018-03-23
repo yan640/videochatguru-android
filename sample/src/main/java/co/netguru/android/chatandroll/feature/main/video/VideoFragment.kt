@@ -38,6 +38,10 @@ import timber.log.Timber
 @SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
 
+    init {
+        retainInstance = true
+    }
+
 
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
@@ -59,6 +63,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         private const val CONNECT_BUTTON_ANIMATION_DURATION_MS = 500L
     }
 
+
     private lateinit var serviceConnection: ServiceConnection
 
     private var pairingConfirmationDialog: AlertDialog? = null
@@ -76,7 +81,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun retrievePresenter() = App
             .getApplicationComponent(context)
-            .videoFragmentComponent()
+           // .videoFragmentComponent()
             .videoFragmentPresenter()
 
 
