@@ -14,7 +14,9 @@ import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import co.netguru.android.chatandroll.R
@@ -38,14 +40,13 @@ import timber.log.Timber
 @SuppressLint("Range")
 class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
 
-    init {
-        retainInstance = true
-    }
-
 
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = VideoFragment::class.java.name
-        fun newInstance() = VideoFragment()
+        fun newInstance(): VideoFragment {
+            Timber.d("new Instance = VideoFragment")
+            return VideoFragment()
+        }
 
 
         private const val KEY_IN_CHAT = "key:in_chat"
@@ -79,9 +80,9 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override lateinit var adapter: PairedDevicesAdapter
 
-    override fun retrievePresenter() = App
+    override fun retrievePresenter(): VideoFragmentPresenter = App
             .getApplicationComponent(context)
-           // .videoFragmentComponent()
+            // .videoFragmentComponent()
             .videoFragmentPresenter()
 
 
@@ -162,7 +163,19 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         super.onStart()
         service?.hideBackgroundWorkWarning()
         checkPermissionsAndConnect()
+        Timber.d("onStart = $this")
 
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
+        Timber.d("onCreate = $this")
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        Timber.d("onCreateView = $this")
+        return super.onCreateView(inflater, container, savedInstanceState)
     }
 
     override fun onStop() {
@@ -198,7 +211,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
 
     //</editor-fold>
-
 
 
     //<editor-fold desc="Dialogs">
@@ -287,7 +299,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     //</editor-fold>
 
 
-
     //<editor-fold desc="Buttons">
 
     override fun hideConnectButtonWithAnimation() {
@@ -374,7 +385,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     //</editor-fold>
-
 
 
     //<editor-fold desc="Services">
@@ -473,14 +483,13 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     //</editor-fold>
 
 
-
     //<editor-fold desc="SnackBars">
     override fun showErrorWhileChoosingForPairing() {
         showSnackbarMessage(R.string.error_choosing_pairing_device, Snackbar.LENGTH_LONG)
     }
 
-    override fun showMessageDeviceStoppedPairing(deviceName:String) {
-        val message = getString(R.string.the_device_has_stopped_pairing,deviceName)
+    override fun showMessageDeviceStoppedPairing(deviceName: String) {
+        val message = getString(R.string.the_device_has_stopped_pairing, deviceName)
         showSnackbarMessage(message, Snackbar.LENGTH_LONG)
     }
 
@@ -520,7 +529,6 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
 
     //</editor-fold>
-
 
 
     //<editor-fold desc="Recycler">

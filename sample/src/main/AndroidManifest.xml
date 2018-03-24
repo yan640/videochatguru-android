@@ -33,7 +33,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="co.netguru.android.chatandroll.feature.main.MainActivity"
+            android:name="co.netguru.android.chatandroll.feature.main.central.CentralActivity"
             android:theme="@style/SplashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

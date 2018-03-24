@@ -40,7 +40,7 @@ class VideoFragmentPresenter @Inject constructor(
 ) : BasePresenter<VideoFragmentView>() {
 
     init {
-        Timber.d("${this::class.java.name} is created = ${this.toString()}")
+        Timber.d("constructor = ${this}")
     }
 
     private val actualPairedDataDisposables = CompositeDisposable()
@@ -206,7 +206,6 @@ class VideoFragmentPresenter @Inject constructor(
         actualPairedDataDisposables += firebasePairingWifi.connect()
                 .andThen(getDeviceUUid())
                 .doOnSuccess {
-                    Timber.d("get device UUID = $it")
                     App.THIS_DEVICE_UUID = it
                 }
                 .flatMapPublisher { firebasePairingWifi.listenRoomReference(it) }

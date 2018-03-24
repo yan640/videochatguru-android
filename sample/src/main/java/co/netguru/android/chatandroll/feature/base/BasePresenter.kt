@@ -1,6 +1,8 @@
 package co.netguru.android.chatandroll.feature.base
 
-
+/**
+ * Класс -  ссылка на View (Fragment)
+ */
 abstract class BasePresenter<T : MvpView> : Presenter<T> {
 
     //ToDo 16.08.2017 can be reverted to old form when https://youtrack.jetbrains.com/issue/KT-19306 is fixed
