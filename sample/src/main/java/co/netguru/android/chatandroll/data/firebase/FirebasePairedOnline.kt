@@ -17,8 +17,8 @@ class FirebasePairedOnline @Inject constructor(private val firebaseDatabase: Fir
 
     companion object {
         private const val ONLINE_DEVICES_PATH = "online_devices/"
-        private const val PHONE_ROOM = "device_to_room/"
-        private const val ROOMS = "Rooms"
+        private const val PHONE_ROOM = "room_reference/"
+        private const val ROOMS = "paired_rooms"
     }
 
     private fun deviceOnlinePath(deviceUuid: String) = ONLINE_DEVICES_PATH.plus(deviceUuid)

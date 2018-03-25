@@ -3,7 +3,9 @@ package co.netguru.android.chatandroll.feature.main.video
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.*
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
+import android.content.ServiceConnection
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
@@ -23,7 +25,6 @@ import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
-import co.netguru.android.chatandroll.feature.main.ChildActivity
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_video.*
@@ -35,12 +36,12 @@ import org.webrtc.PeerConnection
 import timber.log.Timber
 
 @SuppressLint("Range")
-class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>(), VideoFragmentView, WebRtcServiceListener {
+class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>(), ChildFragmentView, WebRtcServiceListener {
 
 
     companion object {  // TODO  переделать на const для эффективности
-        val TAG: String = VideoFragment::class.java.name
-        fun newInstance() = VideoFragment()
+        val TAG: String = ChildFragment::class.java.name
+        fun newInstance() = ChildFragment()
 
 
         private const val KEY_IN_CHAT = "key:in_chat"
@@ -59,10 +60,11 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     }
 
     private lateinit var serviceConnection: ServiceConnection
+
     private var pairingConfirmationDialog: AlertDialog? = null
     private var chooseRoleDialog: AlertDialog? = null
     private var pairingProgeressDialog: AlertDialog? = null
-    override fun getLayoutId() = R.layout.fragment_video
+    override fun getLayoutId() = R.layout.fragment_child
 
 
     var service: WebRtcService? = null
@@ -74,8 +76,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun retrievePresenter() = App
             .getApplicationComponent(context)
-            .videoFragmentComponent()
-            .videoFragmentPresenter()
+            .childFragmentComponent()
+            .childFragmentPresenter()
 
 
     override fun saveFirebaseDeviceKey(key: String) {
@@ -118,14 +120,14 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
         getPresenter().onViewCreated()
-
+        getPresenter().startChildVideo()
         if (savedInstanceState?.getBoolean(KEY_IN_CHAT) == true) {
             initAlreadyRunningConnection()
         }
-        connectButton.setOnClickListener {
-            //getPresenter().connect()
-            getPresenter().startChildVideo()
-        }
+//        connectButton.setOnClickListener {
+//            //getPresenter().connect()
+//            getPresenter().startChildVideo()
+//        }
         pairButton.setOnClickListener {
             getPresenter().pairButtonClicked()
         }
@@ -147,12 +149,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         }
         devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
         parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
-        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked()
-            val intent = Intent(context, ChildActivity::class.java)
-
-             startActivity(intent)
-//             getPresenter().launchChildActivity(context)
-            }
+        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
     }
 
@@ -312,8 +309,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun setChildButtonChecked(isChecked: Boolean) {
         if (isChecked)
-             childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-
+            childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
         else
             childRoleButton.backgroundColor = resources.getColor(R.color.primary)
     }

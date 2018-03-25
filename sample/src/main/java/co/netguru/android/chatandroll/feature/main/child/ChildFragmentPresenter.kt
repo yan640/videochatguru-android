@@ -1,10 +1,7 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import android.content.Context
-import android.content.Intent
-import android.support.v4.content.ContextCompat.startActivity
 import co.netguru.android.chatandroll.app.App
-import co.netguru.android.chatandroll.app.ApplicationModule
 import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.ChildEventChanged
@@ -16,8 +13,6 @@ import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.data.model.Role
 import co.netguru.android.chatandroll.feature.base.BasePresenter
-import co.netguru.android.chatandroll.feature.main.ChildActivity
-import co.netguru.android.chatandroll.feature.main.MainActivity
 import com.google.firebase.database.DataSnapshot
 import io.reactivex.Completable
 import io.reactivex.Single
@@ -27,20 +22,19 @@ import io.reactivex.disposables.Disposables
 import io.reactivex.rxkotlin.plusAssign
 import io.reactivex.rxkotlin.subscribeBy
 import org.jetbrains.anko.collections.forEachWithIndex
-import org.webrtc.ContextUtils.getApplicationContext
 import org.webrtc.PeerConnection
 import timber.log.Timber
 import javax.inject.Inject
 
 
-class VideoFragmentPresenter @Inject constructor(
+class ChildFragmentPresenter @Inject constructor(
         private val appContext: Context,
         private val firebaseSignalingOnline: FirebaseSignalingOnline,
         private val firebasePairedOnline: FirebasePairedOnline,
         private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
         private val firebasePairingWifi: FirebasePairingWifi,
         private val firebaseNewRoom: FirebaseNewRoom
-) : BasePresenter<VideoFragmentView>() {
+) : BasePresenter<ChildFragmentView>() {
 
     private val actualPairedDataDisposables = CompositeDisposable()
     private var pairedDisposable = Disposables.disposed()
@@ -327,13 +321,10 @@ class VideoFragmentPresenter @Inject constructor(
 
     fun childRoleButtonClicked() = getView()?.run {
         setChildButtonChecked(true)
-
         setParentButtonChecked(false)
-
         currentDevicePaired?.run {
             role = Role.CHILD
             pushThisDeviceDataToServer(this)
-
             if (childName.isNotBlank())
                 showChildName(childName)
             else
@@ -384,7 +375,7 @@ class VideoFragmentPresenter @Inject constructor(
                 )
     }
 
-    fun startConnection() {
+     fun startConnection() {
         actualPairedDataDisposables += firebaseSignalingOnline.connect()
                 .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
                 .doOnComplete { listenForDisconnectOrders() }
@@ -441,7 +432,7 @@ class VideoFragmentPresenter @Inject constructor(
     fun connect() = getView()?.run {
         attachService()
         showLookingForPartnerMessage()
-        hideConnectButtonWithAnimation()
+//        hideConnectButtonWithAnimation()
     }
 
 
@@ -459,12 +450,6 @@ class VideoFragmentPresenter @Inject constructor(
             disconnect()
         }
 
-    }
-
-    fun launchChildActivity(context: Context) {
-        val intent = Intent(context, ChildActivity::class.java)
-
-        appContext.startActivity(intent)
     }
 
     fun connectionStateChange(iceConnectionState: PeerConnection.IceConnectionState) {

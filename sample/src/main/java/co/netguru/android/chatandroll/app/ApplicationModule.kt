@@ -1,5 +1,6 @@
 package co.netguru.android.chatandroll.app
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.res.Resources
@@ -11,6 +12,7 @@ import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceController
 import co.netguru.videochatguru.WebRtcClient
 import dagger.Module
 import dagger.Provides
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Module
@@ -19,6 +21,8 @@ class ApplicationModule(private val application: Application) {
     @Provides
     @Singleton
     fun provideContext(): Context = application.applicationContext
+
+
 
     @Provides
     @Singleton
@@ -39,4 +43,6 @@ class ApplicationModule(private val application: Application) {
                 webRtcClient, firebaseSignalingAnswers, firebaseSignalingOffers,
                 firebaseIceCandidates, firebaseIceServers)
     }
+
+
 }

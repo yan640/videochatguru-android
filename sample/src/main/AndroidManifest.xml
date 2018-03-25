@@ -40,6 +40,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".feature.main.ChildActivity"
+            android:theme="@style/SplashTheme"></activity>
         <service
             android:name="co.netguru.android.chatandroll.webrtc.service.WebRtcService"
             android:enabled="true"/>

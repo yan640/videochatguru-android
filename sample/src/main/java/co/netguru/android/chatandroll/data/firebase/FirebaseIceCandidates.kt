@@ -21,7 +21,7 @@ class FirebaseIceCandidates @Inject constructor(private val firebaseDatabase: Fi
     }
 
 
-    private fun deviceIceCandidatesPath(uuid: String) = "paired_devices/" +App.CURRENT_ROOM_ID +"/"+ ICE_CANDIDATES_PATH +uuid
+    private fun deviceIceCandidatesPath(uuid: String) = ICE_CANDIDATES_PATH.plus(uuid)//"paired_devices/" +App.CURRENT_ROOM_ID +"/"+ ICE_CANDIDATES_PATH +uuid
 
     fun send(iceCandidate: IceCandidate): Completable = Completable.create {
         val reference = firebaseDatabase.getReference(deviceIceCandidatesPath(App.THIS_DEVICE_UUID))

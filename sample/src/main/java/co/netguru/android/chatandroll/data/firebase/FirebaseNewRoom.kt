@@ -13,8 +13,8 @@ import javax.inject.Singleton
 class FirebaseNewRoom @Inject constructor(private val firebaseDatabase: FirebaseDatabase) {
 
     companion object {
-        private const val PHONE_ROOM = "Phone_room/"
-        private const val ROOMS = "Rooms"
+        private const val PHONE_ROOM = "room_reference/"
+        private const val ROOMS = "paired_rooms"
     }
 
     private fun deviceOnlinePath(deviceUuid: String) = PHONE_ROOM.plus(deviceUuid)
