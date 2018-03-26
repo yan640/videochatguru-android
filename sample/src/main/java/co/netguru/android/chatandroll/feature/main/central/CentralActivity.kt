@@ -13,6 +13,7 @@ class CentralActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null)
-            getReplaceFragmentTransaction(R.id.container, CentralFragment(), CentralFragment.TAG)
+            getReplaceFragmentTransaction(R.id.fragmentContainer, CentralFragment(), CentralFragment.TAG)
+                    .commit()
     }
 }

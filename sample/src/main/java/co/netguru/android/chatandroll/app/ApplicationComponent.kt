@@ -1,9 +1,9 @@
 package co.netguru.android.chatandroll.app
 
 import co.netguru.android.chatandroll.data.firebase.FirebaseModule
-import co.netguru.android.chatandroll.feature.main.video.VideoFragment
+import co.netguru.android.chatandroll.feature.main.central.FragmentComponent
+import co.netguru.android.chatandroll.feature.main.central.FragmentModule
 import co.netguru.android.chatandroll.feature.main.video.VideoFragmentComponent
-import co.netguru.android.chatandroll.feature.main.video.VideoFragmentPresenter
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceComponent
 import dagger.Component
 import javax.inject.Singleton
@@ -12,11 +12,13 @@ import javax.inject.Singleton
 @Component(modules = arrayOf(ApplicationModule::class, FirebaseModule::class))  // зависимости из каких модулей мы объеденяем
 interface ApplicationComponent {
 
-    fun videoFragmentComponent(): VideoFragmentComponent  // инициализация дочерных компонентов (Subcomponent)
-    fun inject(videoFragment: VideoFragment)  // Объявляет в какой класс мы хотим делать injection, название произвольное, главное - тип
+    //<editor-fold desc="инициализация дочерных компонентов (Subcomponent)">
+    fun videoFragmentComponent(): VideoFragmentComponent
 
-
-    fun videoFragmentPresenter(): VideoFragmentPresenter
+    fun fragmentComponent(fragmentModule: FragmentModule): FragmentComponent
 
     fun webRtcServiceComponent(): WebRtcServiceComponent
+
+    //</editor-fold>
+
 }

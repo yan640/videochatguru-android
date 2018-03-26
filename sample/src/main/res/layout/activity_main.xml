@@ -6,9 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_splash"
+    tools:context="co.netguru.android.chatandroll.feature.main.MainActivity"
     android:orientation="vertical"
-    tools:context="co.netguru.android.chatandroll.feature.main.MainActivity">
-
+    >
 
     <FrameLayout
         android:id="@+id/fragmentContainer"

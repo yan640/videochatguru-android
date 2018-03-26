@@ -82,7 +82,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
 
     override fun retrievePresenter(): VideoFragmentPresenter = App
             .getApplicationComponent(context)
-            // .videoFragmentComponent()
+            .videoFragmentComponent()
             .videoFragmentPresenter()
 
 

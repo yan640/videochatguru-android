@@ -6,16 +6,24 @@ import android.app.NotificationManager
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatDelegate
 import co.netguru.android.chatandroll.BuildConfig
 import co.netguru.android.chatandroll.R
+import co.netguru.android.chatandroll.app.App.Factory.BACKGROUND_WORK_NOTIFICATIONS_CHANNEL_ID
+import co.netguru.android.chatandroll.app.App.Factory.THIS_DEVICE_UUID
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.FirebaseModule
+import co.netguru.android.chatandroll.feature.main.central.CentralFragment
+import co.netguru.android.chatandroll.feature.main.central.FragmentComponent
+import co.netguru.android.chatandroll.feature.main.central.FragmentModule
+
 import co.netguru.videochatguru.disableWebRtcLogs
 import co.netguru.videochatguru.enableInternalWebRtclogs
 import co.netguru.videochatguru.enableWebRtcLogs
 import com.squareup.leakcanary.LeakCanary
 import org.webrtc.Logging
+import org.webrtc.NetworkMonitor.init
 import timber.log.Timber
 import java.util.*
 
@@ -33,9 +41,12 @@ class App : Application() {
 
         fun getApplicationComponent(context: Context): ApplicationComponent =
                 (context.applicationContext as App).applicationComponent
+
+
     }
 
-   // lateinit var roomUUID: String
+    // lateinit var roomUUID: String
+
 
     val CURRENT_WIFI_BSSID: String?
         get() {
@@ -44,15 +55,36 @@ class App : Application() {
             return wifiManager.connectionInfo.bssid
         }
 
-    val applicationComponent: ApplicationComponent by lazy {  // инициализация ApplicationComponent
+    val applicationComponent: ApplicationComponent by lazy {
+        // инициализация ApplicationComponent
         DaggerApplicationComponent.builder()
                 .applicationModule(ApplicationModule(this))
                 .firebaseModule(FirebaseModule())
                 .build()
     }
 
+    private var fragmentComponent: FragmentComponent? = null
+
+
     init {
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
+    }
+
+    fun initFragmentComponent(): FragmentComponent {
+        val component = applicationComponent
+                .fragmentComponent(FragmentModule())
+        fragmentComponent = component
+        return component
+
+    }
+
+    fun getFragmentComponent() =
+            fragmentComponent ?: initFragmentComponent()
+
+
+    fun destroyFragmentComponent() {
+        fragmentComponent = null
+        Timber.d("FragmentComponent destroyed")
     }
 
     override fun onCreate() {
