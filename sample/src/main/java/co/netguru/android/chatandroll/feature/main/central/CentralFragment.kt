@@ -257,7 +257,7 @@ class CentralFragment :
         btnParentRole.visibility = View.VISIBLE
         btnNameOfChild.visibility = View.GONE
         setParentButtonChecked(true)
-
+        setChildButtonChecked(false)
     }
 
     override fun setChildRoleState() {
@@ -265,6 +265,7 @@ class CentralFragment :
         btnPair.visibility = View.VISIBLE  // TODO семестить вниз
         btnChildRole.visibility = View.VISIBLE
         setChildButtonChecked(true)
+        setParentButtonChecked(false)
 
         btnParentRole.visibility = View.VISIBLE
 
@@ -301,27 +302,27 @@ class CentralFragment :
 
     override fun setParentButtonChecked(isChecked: Boolean) {
         if (isChecked)
-            parenRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
+            btnParentRole.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
         else
-            parenRoleButton.backgroundColor = resources.getColor(R.color.primary)
+            btnParentRole.backgroundColor = resources.getColor(R.color.primary)
     }
 
     override fun setChildButtonChecked(isChecked: Boolean) {
         if (isChecked)
-            childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
+            btnChildRole.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
         else
-            childRoleButton.backgroundColor = resources.getColor(R.color.primary)
+            btnChildRole.backgroundColor = resources.getColor(R.color.primary)
     }
 
 
 
     override fun hideChildName() {
-        childNameButton.visibility = View.GONE
+        btnNameOfChild.visibility = View.GONE
     }
 
     override fun showChildName(childName: String) {
-        childNameButton.text = childName
-        childNameButton.visibility = View.VISIBLE
+        btnNameOfChild.text = childName
+        btnNameOfChild.visibility = View.VISIBLE
     }
 
 
