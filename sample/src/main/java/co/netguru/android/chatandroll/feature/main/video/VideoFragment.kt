@@ -156,7 +156,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
         parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
         childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
-        childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
+        //childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
     }
 
     override fun onStart() {
@@ -246,7 +246,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                     yesButton {
                         if (childName.text.isNotBlank()) {
                             getPresenter().setChildName(childName.text.toString())
-                            childNameButton.text = childName.text.toString()  // TODO через презентер
+                           // childNameButton.text = childName.text.toString()  // TODO через презентер
                         } else
                             toast("Child name is blank!")
                     }

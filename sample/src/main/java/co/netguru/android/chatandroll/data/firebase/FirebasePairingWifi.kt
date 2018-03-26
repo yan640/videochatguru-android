@@ -13,6 +13,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
 import io.reactivex.Flowable
+import io.reactivex.Single
 import io.reactivex.rxkotlin.ofType
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +37,12 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
     private lateinit var pairingReferenceThisDevice: DatabaseReference
     private val app: App by lazy { App.get(appContext) }
+
+    fun getNewKeyForThisDevice(): Single<String> =
+            Single.create { emitter ->
+                val key = firebaseDatabase.getReference(ROOM_REFERENCE_PATH).push().key
+                emitter.onSuccess(key)
+            }
 
 
     /**

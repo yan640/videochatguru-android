@@ -6,17 +6,6 @@
                                                  android:layout_width="match_parent"
                                                  android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/childNameButton"
-        android:layout_margin="20dp"
-        android:background="@color/semi_transparent_white"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_gravity="center_horizontal"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-
-        />
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/localVideoView"
@@ -32,13 +21,20 @@
         android:layout_height="match_parent"
         android:visibility="gone"/>
 
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/devicesRecycler"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_gravity="top"
-        android:layout_marginTop="100dp">
-    </android.support.v7.widget.RecyclerView>
+        android:layout_marginTop="8dp"/>
+
+
+    <Button
+        android:id="@+id/childNameButton"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
 
     <ImageButton
         android:id="@+id/switchCameraButton"

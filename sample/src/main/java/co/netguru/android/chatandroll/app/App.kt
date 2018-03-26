@@ -55,6 +55,8 @@ class App : Application() {
             return wifiManager.connectionInfo.bssid
         }
 
+    var thisDeviceUuid:String? = null
+
     val applicationComponent: ApplicationComponent by lazy {
         // инициализация ApplicationComponent
         DaggerApplicationComponent.builder()
