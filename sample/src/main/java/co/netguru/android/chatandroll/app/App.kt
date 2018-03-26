@@ -36,6 +36,7 @@ class App : Application() {
     }
 
    // lateinit var roomUUID: String
+   var FRONT_CAMERA_INITIALIZATION = true;
 
     val CURRENT_WIFI_BSSID: String?
         get() {

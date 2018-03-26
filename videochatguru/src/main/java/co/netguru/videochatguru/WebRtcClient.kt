@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * @param integerAudioConstraints enables overwriting default [IntegerAudioConstraints] used by client
  * @param peerConnectionConstraints enables overwriting default [PeerConnectionConstraints] used by client
  * @param offerAnswerConstraints enables overwriting default [OfferAnswerConstraints] used by client
+ *   @param frontCameraInitialization enables overwriting default [OfferAnswerConstraints] used by client
  */
 open class WebRtcClient(context: Context,
                         private val localVideoWidth: Int = 1280,
@@ -34,7 +35,8 @@ open class WebRtcClient(context: Context,
                         booleanAudioConstraints: WebRtcConstraints<BooleanAudioConstraints, Boolean>? = null,
                         integerAudioConstraints: WebRtcConstraints<IntegerAudioConstraints, Int>? = null,
                         peerConnectionConstraints: WebRtcConstraints<PeerConnectionConstraints, Boolean>? = null,
-                        offerAnswerConstraints: WebRtcConstraints<OfferAnswerConstraints, Boolean>? = null) : RemoteVideoListener {
+                        offerAnswerConstraints: WebRtcConstraints<OfferAnswerConstraints, Boolean>? = null,
+                        var frontCameraInitialization: Boolean = true) : RemoteVideoListener {
 
     companion object {
         private val TAG = WebRtcClient::class.java.simpleName
@@ -45,6 +47,8 @@ open class WebRtcClient(context: Context,
     private val counter = AtomicInteger(0)
     private val singleThreadExecutor = Executors.newSingleThreadExecutor()
     private val mainThreadHandler = Handler(Looper.getMainLooper())
+
+
 
     private var remoteVideoTrack: VideoTrack? = null
 
@@ -87,7 +91,8 @@ open class WebRtcClient(context: Context,
         }
     }
 
-    private val videoCameraCapturer = WebRtcUtils.createCameraCapturerWithFrontAsDefault(context)
+    private val videoCameraCapturer = if(frontCameraInitialization) WebRtcUtils.createCameraCapturerWithFrontAsDefault(context)
+    else WebRtcUtils.createCameraCapturerWithBackAsDefault(context)
 
     var cameraEnabled = true
         set(isEnabled) {

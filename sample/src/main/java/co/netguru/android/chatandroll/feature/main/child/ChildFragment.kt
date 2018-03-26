@@ -121,6 +121,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
         getPresenter().onViewCreated()
         getPresenter().startChildVideo()
+
         if (savedInstanceState?.getBoolean(KEY_IN_CHAT) == true) {
             initAlreadyRunningConnection()
         }
@@ -133,7 +134,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         }
 
         disconnectButton.setOnClickListener {
+
             getPresenter().disconnectByUser()
+            getActivity().finish()
         }
 
         switchCameraButton.setOnClickListener {
@@ -348,7 +351,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     override fun showCamViews() {
         buttonPanel.visibility = View.VISIBLE
-        remoteVideoView.visibility = View.VISIBLE
+        remoteVideoView.visibility = View.GONE
         localVideoView.visibility = View.VISIBLE
         connectButton.visibility = View.GONE
         pairButton.visibility = View.GONE

@@ -89,6 +89,10 @@ class ChildFragmentPresenter @Inject constructor(
         super.detachView()
     }
 
+
+    override fun attachView(mvpView: ChildFragmentView) {
+        super.attachView(mvpView)
+    }
     //</editor-fold>
 
 
@@ -363,6 +367,7 @@ class ChildFragmentPresenter @Inject constructor(
                         onSuccess = {
                             Timber.d("Next $it")
                             //getView()?.showCamViews()
+                            App.get(appContext).FRONT_CAMERA_INITIALIZATION = false
                             App.CURRENT_ROOM_ID = it
                             connect()
                             getView()?.showFirebaiseKey(it)

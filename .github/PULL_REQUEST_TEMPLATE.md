@@ -1,6 +1,6 @@
 ### Task
 <!-- Link to issue if any -->
- - [Issue](https://github.com/netguru/videochatguru-android/issues/)
+ - [Issue](https://github.com/yan640/videochatguru-android/issues/)
  
 ### Description
 <!-- Describe the solution, changes, possible problems etc. -->

@@ -1,6 +1,7 @@
 package co.netguru.android.chatandroll.feature.main
 
 import android.os.Bundle
+import android.view.WindowManager
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.feature.base.BaseActivity
 import co.netguru.android.chatandroll.feature.main.video.ChildFragment
@@ -21,6 +22,9 @@ class ChildActivity : BaseActivity() {
         if (savedInstanceState == null) {
             getReplaceFragmentTransaction(R.id.fragmentContainer, childFragment, ChildFragment.TAG).commit()
         }
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
     }
+
+
 }

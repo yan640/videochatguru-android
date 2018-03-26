@@ -14,7 +14,18 @@ internal object WebRtcUtils {
     internal fun createCameraCapturerWithFrontAsDefault(context: Context) = createCameraCapturerWithFrontAsDefault(
             if (WebRtcCameraUtils.isCamera2Supported(context)) Camera2Enumerator(context) else Camera1Enumerator()
     )
+    @SuppressLint("NewApi")
+    internal fun createCameraCapturerWithBackAsDefault(context: Context) = createCameraCapturerWithBackAsDefault(
+            if (WebRtcCameraUtils.isCamera2Supported(context)) Camera2Enumerator(context) else Camera1Enumerator()
+    )
+    private fun createCameraCapturerWithBackAsDefault(enumerator: CameraEnumerator): CameraVideoCapturer? {
+        val (frontFacingCameras, backFacingAndOtherCameras) = enumerator.deviceNames
+                .partition { enumerator.isBackFacing(it) }
 
+        return (frontFacingCameras.firstOrNull() ?: backFacingAndOtherCameras.firstOrNull())?.let {
+            enumerator.createCapturer(it, null)
+        }
+    }
     private fun createCameraCapturerWithFrontAsDefault(enumerator: CameraEnumerator): CameraVideoCapturer? {
         val (frontFacingCameras, backFacingAndOtherCameras) = enumerator.deviceNames
                 .partition { enumerator.isFrontFacing(it) }

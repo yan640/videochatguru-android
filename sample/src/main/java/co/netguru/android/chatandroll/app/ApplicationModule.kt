@@ -33,7 +33,7 @@ class ApplicationModule(private val application: Application) {
     fun provideResources(): Resources = application.resources
 
     @Provides
-    fun provideWebRtcClient(context: Context) = WebRtcClient(context)
+    fun provideWebRtcClient(context: Context) = WebRtcClient(context, frontCameraInitialization = App.get(context).FRONT_CAMERA_INITIALIZATION)
 
     @Provides
     fun provideWebRtcServiceController(webRtcClient: WebRtcClient, firebaseSignalingAnswers: FirebaseSignalingAnswers,
