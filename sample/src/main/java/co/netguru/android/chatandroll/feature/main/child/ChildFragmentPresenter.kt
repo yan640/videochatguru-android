@@ -9,6 +9,7 @@ import co.netguru.android.chatandroll.common.extension.ChildEventRemoved
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.*
+import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.data.model.Role
@@ -40,17 +41,21 @@ class ChildFragmentPresenter @Inject constructor(
     private var pairedDisposable = Disposables.disposed()
 
     private val pairingDisposables = CompositeDisposable()
+    private var childDisposable = Disposables.disposed()
+
+
+
     private var disposableForRetrieveKey: Disposable = Disposables.disposed()
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
 
     private val app: App by lazy { App.get(appContext) }
 
-    private val listOfPairedDevices = mutableListOf<PairedDevice>()
-    private val currentDevicePaired
-        get() = listOfPairedDevices.find { it.uuid == App.THIS_DEVICE_UUID }
-
-    private val listOfOtherDevicePaired
-        get() = listOfPairedDevices.filter { it.uuid != App.THIS_DEVICE_UUID }
+    private val listOfChildrens = mutableListOf<Child>()
+//    private val currentDevicePaired
+//        get() = listOfChildrens.find { it.uuid == App.THIS_DEVICE_UUID }
+//
+//    private val listOfOtherDevicePaired
+//        get() = listOfChildrens.filter { it.uuid != App.THIS_DEVICE_UUID }
 
 
     private var pairingCandidate: PairingDevice? = null
@@ -80,7 +85,7 @@ class ChildFragmentPresenter @Inject constructor(
         actualPairedDataDisposables.clear()
         if (appState == State.PAIRING)
             stopPairing()
-        listOfPairedDevices.clear()
+        listOfChildrens.clear()
         // TODO online - offline
     }
 
@@ -170,7 +175,7 @@ class ChildFragmentPresenter @Inject constructor(
 
 
     fun confirmPairingAndWaitForOther(pairingCandidate: PairingDevice) {
-        pairedDisposable = fir ebaseChild.saveThisChildInPaired(pairingCandidate)
+        pairedDisposable = firebasePairingWifi.saveThisDeviceInPaired(pairingCandidate)
                 .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) //  в andThen() круглые скобки!!!
                 .doOnComplete { pairingDisposables.clear() }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
                 .andThen(firebasePairingWifi.saveRoomReference(pairingCandidate))
@@ -219,22 +224,12 @@ class ChildFragmentPresenter @Inject constructor(
      * SharedPreferences или FirebaseDB
      */
     private fun getDataFromServer() {
-        actualPairedDataDisposables += firebasePairingWifi.connect()
-                .andThen(getDeviceUUid())
-                .doOnSuccess {
-                    Timber.d("get device UUID = $it")
-                    App.THIS_DEVICE_UUID = it
-                }
-                .flatMapPublisher { firebasePairingWifi.listenRoomReference(it) }
-                .doOnNext {
-                    Timber.d("get Room id = $it")
-                }
-                .flatMap { firebasePairingWifi.listenRoom(it) }
+        actualPairedDataDisposables +=  firebaseChild.listenRoom(App.CURRENT_ROOM_ID)
                 .doOnNext { Timber.d("get paired device in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
-                            updateLocalListOfPairedDevices(it)
+                            updateLocalListOfChildes(it)
                         }
                 )
     }
@@ -248,54 +243,69 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
 
-    private fun updateLocalListOfPairedDevices(childEvent: ChildEvent<DataSnapshot>) {
-        val pairedDevice = childEvent.data.getValue(PairedDevice::class.java) as PairedDevice
+    private fun updateLocalListOfChildes(childEvent: ChildEvent<DataSnapshot>) {
+        val child = childEvent.data.getValue(Child::class.java) as Child
         when (childEvent) {
             is ChildEventAdded<DataSnapshot> ->
-                listOfPairedDevices += pairedDevice
+                listOfChildrens += child
             is ChildEventRemoved<DataSnapshot> ->
-                listOfPairedDevices -= pairedDevice
+                listOfChildrens -= child
             is ChildEventChanged<DataSnapshot> -> {
-                listOfPairedDevices.removeAll { it.uuid == pairedDevice.uuid }
-                listOfPairedDevices += pairedDevice
+                listOfChildrens.removeAll { it.key == child.key }
+                listOfChildrens += child
             }
         }
         // Проверяем что в списке есть наше устройство и хотябы одно другое
-        if (currentDevicePaired != null
-                && listOfOtherDevicePaired.isNotEmpty()) {
-            setDeviceOnline()
+        if (listOfChildrens != null ) {
+            if (listOfChildrens.size==1)
+            {
+                // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
+                startChildVideo()
+            }
+            else
+            {
+                // TODO Показать рекуклер вью с детьми и ждать выбора
+            }
+
+
+           // setDeviceOnline()
             updateUI()
         } else {
-            getView()?.hideParentChildButtons()
+            //  Показать меню выбора имени ребенка
+            getView()?.showSetChildNameDialog()
+            // TODO сохарнить нового ребенка
+            // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
+            // TODO startChildVideo()
+
         }
 
-        // TODO удалить комнату из базы если там одно устройство или нашу ссылку на комнату если нашего устройства нет в списке
 
-        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
+
+        listOfChildrens.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.childName}") }
     }
 
 
     private fun updateUI() = getView()?.run {
-        updateDevicesRecycler(listOfOtherDevicePaired)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
-        showParentChildButtons()
-        setPairButtonText("Unpair")
-        currentDevicePaired?.let {
-            when (it.role) {
-                Role.CHILD -> {
-                    setChildButtonChecked(true)
-                    showChildName(it.childName)
-                }
-                Role.PARENT -> {
-                    setParentButtonChecked(true)
-                    hideChildName()
-                }
-                Role.UNDEFINED -> {
-                    showChooseRoleDialog()
-                    showParentChildButtons()
-                    hideChildName()
-                }
-            }
-        }
+        updateDevicesRecycler(listOfChildrens)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
+//        showParentChildButtons()
+//        setPairButtonText("Unpair")
+//        currentDevicePaired?.let {
+//            when (it.role) {
+//                Role.CHILD -> {
+//                    setChildButtonChecked(true)
+//                    showChildName(it.childName)
+//                }
+//                Role.PARENT -> {
+//                    setParentButtonChecked(true)
+//                    hideChildName()
+//                }
+//                Role.UNDEFINED -> {
+//                    showChooseRoleDialog()
+//                    showParentChildButtons()
+//                    hideChildName()
+//                }
+//            }
+//        }
     }
 
     private fun pushThisDeviceDataToServer(thisDevice: PairedDevice) {
@@ -312,46 +322,66 @@ class ChildFragmentPresenter @Inject constructor(
 
     }
 
-    fun parentRoleButtonClicked() = getView()?.run {
-        setParentButtonChecked(true)
-        setChildButtonChecked(false)
-        hideChildName()
-        currentDevicePaired?.run {
-            role = Role.PARENT
-            pushThisDeviceDataToServer(this)
-        }
+//    fun parentRoleButtonClicked() = getView()?.run {
+//        setParentButtonChecked(true)
+//        setChildButtonChecked(false)
+//        hideChildName()
+//        currentDevicePaired?.run {
+//            role = Role.PARENT
+//            pushThisDeviceDataToServer(this)
+//        }
+//    }
+//
+//
+//    fun childRoleButtonClicked() = getView()?.run {
+//        setChildButtonChecked(true)
+//        setParentButtonChecked(false)
+//        currentDevicePaired?.run {
+//            role = Role.CHILD
+//            pushThisDeviceDataToServer(this)
+//            if (childName.isNotBlank())
+//                showChildName(childName)
+//            else
+//                showSetChildNameDialog()
+//        }
+//    }
+
+
+    fun setChildName(childName: String) =   {
+        childDisposable = firebaseChild.saveThisChildInPaired(childName)
+
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+                        onComplete = {
+                            //getView()?.showSnackbarFromString("You and device ${pairingCandidate.name} paired!") // TODO to stringRes
+                            this.pairingCandidate = null
+                            childDisposable.dispose()
+                            getDataFromServer()
+                        },
+                        onError = { TODO("not implemented") }
+                )
+
+
+
+       // TODO Создать и сохранить Чайлда
+
     }
 
 
-    fun childRoleButtonClicked() = getView()?.run {
-        setChildButtonChecked(true)
-        setParentButtonChecked(false)
-        currentDevicePaired?.run {
-            role = Role.CHILD
-            pushThisDeviceDataToServer(this)
-            if (childName.isNotBlank())
-                showChildName(childName)
-            else
-                showSetChildNameDialog()
-        }
-    }
+//    fun setDeviceOnline() = currentDevicePaired?.let {
+//        it.online = true
+//        pushThisDeviceDataToServer(it)
+//
+//    }
+//
+//    fun childNameButtonClicked() {
+//        getView()?.showSetChildNameDialog(currentDevicePaired?.childName)
+//    }
 
-
-    fun setChildName(childName: String) = currentDevicePaired?.let {
-        it.childName = childName
-        pushThisDeviceDataToServer(it)
-    }
-
-
-    fun setDeviceOnline() = currentDevicePaired?.let {
-        it.online = true
-        pushThisDeviceDataToServer(it)
+    fun childListener() {
 
     }
 
-    fun childNameButtonClicked() {
-        getView()?.showSetChildNameDialog(currentDevicePaired?.childName)
-    }
 
     //</editor-fold>
 

@@ -76,22 +76,41 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
     }
 
 
-    fun saveThisChildInPaired(pairingCandidate: PairingDevice):
+    fun saveThisChildInPaired(childName: String ):
             Completable = Completable.create { emitter ->
-        val roomName =  App.CURRENT_ROOM_ID
-        firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
-                .child(roomName)
+        val firebaseChildKey =  firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+                .child(App.CURRENT_ROOM_ID)
                 .child(CHILD)
-                .child(App.THIS_DEVICE_UUID)
+                .key
+        firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+                .child(App.CURRENT_ROOM_ID)
+                .child(CHILD)
+                .child(firebaseChildKey)
                 .setValue(Child(
-                        uuid = App.THIS_DEVICE_UUID,
-                        childName = App.THIS_DEVICE_MODEL,
-                        online = true,
+                        key = firebaseChildKey,
+                        childName = childName ,
+//                        phoneUuid = App.THIS_DEVICE_UUID,
+//                        phoneModel = App.THIS_DEVICE_MODEL,
+//                        online = true,
                         useFrontCamera  = false,
                         useFlashLight = false))
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
+
+    fun setChildOnline(wifiBSSID: String): Completable = Completable.create { emitter ->
+        pairingReferenceThisDevice = firebaseDatabase
+                .getReference(PAIRING_PATH)
+                .child(wifiBSSID)
+                .child(App.THIS_DEVICE_UUID)
+        with(pairingReferenceThisDevice) {
+            onDisconnect().removeValue()
+            setValue(PairingDevice(App.THIS_DEVICE_UUID, App.THIS_DEVICE_MODEL))
+                    .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
+        }
+        emitter.onComplete()
+    }
+
 
     /**
      * Порождает Completable.complete если в [PAIRED_ROOMS_PATH] /room
@@ -143,8 +162,9 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 
 
     fun listenRoom(roomUuid: String): Flowable<ChildEvent<DataSnapshot>> =
-            firebaseDatabase.getReference(PAIRED_ROOMS_PATH+DEVICES)
+            firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
                     .child(roomUuid)
+                    .child(CHILD)
                     .rxChildEvents()
 
 

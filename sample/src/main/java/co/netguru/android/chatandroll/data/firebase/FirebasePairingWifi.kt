@@ -97,8 +97,9 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
      * 3)c нашем устройством в listOfConfirmedDevises
      **/
     fun listenForPairingCandidateConfirmed(pairingCandidate: PairingDevice): Completable =
-            firebaseDatabase.getReference(PAIRED_ROOMS_PATH+ DEVICES)
+            firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
                     .child(choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid))
+                    .child(DEVICES)
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()                                //(1)
                     .map { it.data }

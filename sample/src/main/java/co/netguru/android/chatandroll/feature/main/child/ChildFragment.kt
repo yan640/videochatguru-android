@@ -22,6 +22,7 @@ import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
+import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
@@ -151,9 +152,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
             service?.enableMicrophone(enabled)
         }
         devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
-        parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
-        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
-        childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
+//        parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
+//        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
+        //childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
     }
 
     override fun onStart() {
@@ -232,7 +233,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                     yesButton {
                         if (childName.text.isNotBlank()) {
                             getPresenter().setChildName(childName.text.toString())
-                            childNameButton.text = childName.text.toString()  // TODO через презентер
+                                    //childNameButton.text = childName.text.toString()  // TODO через презентер
                         } else
                             toast("Child name is blank!")
                     }
@@ -242,32 +243,32 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     }
 
-    override fun showChooseRoleDialog() {
-        if (chooseRoleDialog?.isShowing != true) {
-            chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
-                title = "Parent or child?"
-                customView {
-                    linearLayout {
-                        gravity = Gravity.CENTER_HORIZONTAL
-                        button("Child") {
-                            padding = dip(16)
-                            setOnClickListener {
-                                getPresenter().childRoleButtonClicked()
-                                chooseRoleDialog?.cancel()
-                            }
-                        }
-                        button("Parent") {
-                            padding = dip(16)
-                            setOnClickListener {
-                                getPresenter().parentRoleButtonClicked()
-                                chooseRoleDialog?.cancel()
-                            }
-                        }
-                    }
-                }
-            }.show()
-        }
-    }
+//    override fun showChooseRoleDialog() {
+//        if (chooseRoleDialog?.isShowing != true) {
+//            chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
+//                title = "Parent or child?"
+//                customView {
+//                    linearLayout {
+//                        gravity = Gravity.CENTER_HORIZONTAL
+//                        button("Child") {
+//                            padding = dip(16)
+//                            setOnClickListener {
+//                                getPresenter().childRoleButtonClicked()
+//                                chooseRoleDialog?.cancel()
+//                            }
+//                        }
+//                        button("Parent") {
+//                            padding = dip(16)
+//                            setOnClickListener {
+//                                getPresenter().parentRoleButtonClicked()
+//                                chooseRoleDialog?.cancel()
+//                            }
+//                        }
+//                    }
+//                }
+//            }.show()
+//        }
+//    }
 
     override fun showPairingProgressDialog() {
         pairingProgeressDialog = indeterminateProgressDialog(
@@ -522,9 +523,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
     //<editor-fold desc="Recycler">
-    override fun updateDevicesRecycler(devices: List<PairedDevice>) {
-        val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
-        devicesRecycler.adapter = adapter
+    override fun updateDevicesRecycler(devices: List<Child>) {
+//        val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
+//        devicesRecycler.adapter = adapter
     }
     //</editor-fold>
 }
