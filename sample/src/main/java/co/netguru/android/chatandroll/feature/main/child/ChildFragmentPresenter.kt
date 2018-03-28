@@ -230,7 +230,14 @@ class ChildFragmentPresenter @Inject constructor(
                 .subscribeBy(
                         onNext = {
                             updateLocalListOfChildes(it)
+                        },
+                        onError = {
+                            getView()?.showSetChildNameDialog()
+                        },
+                        onComplete = {
+                            getView()?.showSetChildNameDialog()
                         }
+
                 )
     }
 
@@ -356,6 +363,7 @@ class ChildFragmentPresenter @Inject constructor(
                             //getView()?.showSnackbarFromString("You and device ${pairingCandidate.name} paired!") // TODO to stringRes
                             this.pairingCandidate = null
                             childDisposable.dispose()
+                            startChildVideo()
                             getDataFromServer()
                         },
                         onError = { TODO("not implemented") }

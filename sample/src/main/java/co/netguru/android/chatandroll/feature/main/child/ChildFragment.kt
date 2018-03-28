@@ -121,7 +121,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
         getPresenter().onViewCreated()
-        getPresenter().startChildVideo()
+        //getPresenter().startChildVideo()
 
         if (savedInstanceState?.getBoolean(KEY_IN_CHAT) == true) {
             initAlreadyRunningConnection()
