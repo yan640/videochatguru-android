@@ -1,0 +1,25 @@
+loadIceServers
+listenForOffers() 
+    private fun initializeWebRtc(iceServers: List<PeerConnection.IceServer>) {
+    
+
+
+private fun listenForIceCandidates(remoteUuid: String) {
+   IceCandidates    fun get(remoteUuid: String): Flowable<ChildEvent<IceCandidate>> {
+    private fun listenForIceCandidates(remoteUuid: String) {
+    private fun listenForAnswers() {
+    private fun sendOffer(localDescription: SessionDescription) {
+    private fun sendIceCandidate(iceCandidate: IceCandidate) {
+  IceCandidates      fun send(iceCandidate: IceCandidate): Completable = Completable.create {
+    private fun sendIceCandidate(iceCandidate: IceCandidate) {
+
+
+
+
+
+    private fun listenForIceCandidates(remoteUuid: String) {
+    fun get(remoteUuid: String): Flowable<ChildEvent<IceCandidate>> {
+private fun sendAnswer(localDescription: SessionDescription) {
+    private fun sendIceCandidate(iceCandidate: IceCandidate) {
+    fun send(iceCandidate: IceCandidate): Completable = Completable.create {
+    private fun sendIceCandidate(iceCandidate: IceCandidate) {

@@ -149,6 +149,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
         childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked()
             val intent = Intent(context, ChildActivity::class.java)
+            //intent.putExtra("RoomId",App.CURRENT_ROOM_ID)
 
              startActivity(intent)
 //             getPresenter().launchChildActivity(context)

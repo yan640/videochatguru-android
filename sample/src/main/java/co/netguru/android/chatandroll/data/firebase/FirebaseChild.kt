@@ -6,8 +6,10 @@ import co.netguru.android.chatandroll.common.extension.ChildEvent
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.extension.rxChildEvents
 import co.netguru.android.chatandroll.common.extension.rxValueEvents
+import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
+import co.netguru.android.chatandroll.feature.main.ChildActivity
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -18,11 +20,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Created by yan-c_000 on 06.02.2018.
- * Rewritten by Gleb 21.02.2018
+ * Created by yan-c_000 on 27.03.2018.
  */
 @Singleton
-class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: FirebaseDatabase,
+class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDatabase,
                                               private val appContext: Context) {
 
     companion object {
@@ -30,6 +31,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
         private const val PAIRED_ROOMS_PATH = "paired_rooms/"
         private const val ROOM_REFERENCE_PATH = "room_reference/"
         private const val DEVICES = "devices/"
+        private const val CHILD = "child/"
         const val ROOM_DELETED = "ROOM_DELETED"
 
     }
@@ -74,18 +76,19 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     }
 
 
-    fun saveThisDeviceInPaired(pairingCandidate: PairingDevice):
+    fun saveThisChildInPaired(pairingCandidate: PairingDevice):
             Completable = Completable.create { emitter ->
-        val roomName = choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid)
-        firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
+        val roomName =  App.CURRENT_ROOM_ID
+        firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
                 .child(roomName)
-                .child(DEVICES)
+                .child(CHILD)
                 .child(App.THIS_DEVICE_UUID)
-                .setValue(PairedDevice(
+                .setValue(Child(
                         uuid = App.THIS_DEVICE_UUID,
-                        deviceName = App.THIS_DEVICE_MODEL,
-                        roomUUID = roomName,
-                        listOfConfirmedDevices = listOf(pairingCandidate.uuid)))
+                        childName = App.THIS_DEVICE_MODEL,
+                        online = true,
+                        useFrontCamera  = false,
+                        useFlashLight = false))
                 .addOnCompleteListener { emitter.onComplete() }
                 .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
@@ -97,7 +100,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
      * 3)c нашем устройством в listOfConfirmedDevises
      **/
     fun listenForPairingCandidateConfirmed(pairingCandidate: PairingDevice): Completable =
-            firebaseDatabase.getReference(PAIRED_ROOMS_PATH+ DEVICES)
+            firebaseDatabase.getReference(PAIRED_ROOMS_PATH+DEVICES)
                     .child(choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid))
                     .rxChildEvents()
                     .ofType<ChildEventAdded<DataSnapshot>>()                                //(1)
@@ -113,9 +116,8 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
     fun removeThisDeviceFromPaired(pairingCandidate: PairingDevice): Completable =
             Completable.create { emitter ->
                 val roomName = choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid)
-                firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+                firebaseDatabase.getReference(PAIRED_ROOMS_PATH+DEVICES)
                         .child(roomName)
-                        .child(DEVICES)
                         .child(App.THIS_DEVICE_UUID)
                         .removeValue()
                         .addOnCompleteListener { emitter.onComplete() }
@@ -133,7 +135,7 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
 
     fun listenRoomReference(deviceUUID: String = App.THIS_DEVICE_UUID): Flowable<String> =
-            firebaseDatabase.getReference(ROOM_REFERENCE_PATH )
+            firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
                     .child(deviceUUID)
                     .rxValueEvents()
                     .filter { it.value != null }
@@ -141,17 +143,15 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
 
     fun listenRoom(roomUuid: String): Flowable<ChildEvent<DataSnapshot>> =
-            firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+            firebaseDatabase.getReference(PAIRED_ROOMS_PATH+DEVICES)
                     .child(roomUuid)
-                    .child(DEVICES)
                     .rxChildEvents()
 
 
     fun updateThisDeviceData(pairedDevice: PairedDevice): Completable =
             Completable.create { emitter ->
-                val reference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+                val reference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH+DEVICES)
                         .child(pairedDevice.roomUUID)
-                        .child(DEVICES)
                         .child(App.THIS_DEVICE_UUID)
                 reference.setValue(pairedDevice)
                         .addOnCompleteListener { emitter.onComplete() }

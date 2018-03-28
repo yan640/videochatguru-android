@@ -33,7 +33,7 @@ class ChildFragmentPresenter @Inject constructor(
         private val firebasePairedOnline: FirebasePairedOnline,
         private val firebaseSignalingDisconnect: FirebaseSignalingDisconnect,
         private val firebasePairingWifi: FirebasePairingWifi,
-        private val firebaseNewRoom: FirebaseNewRoom
+        private val firebaseChild: FirebaseChild
 ) : BasePresenter<ChildFragmentView>() {
 
     private val actualPairedDataDisposables = CompositeDisposable()
@@ -170,7 +170,7 @@ class ChildFragmentPresenter @Inject constructor(
 
 
     fun confirmPairingAndWaitForOther(pairingCandidate: PairingDevice) {
-        pairedDisposable = firebasePairingWifi.saveThisDeviceInPaired(pairingCandidate)
+        pairedDisposable = fir ebaseChild.saveThisChildInPaired(pairingCandidate)
                 .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) //  в andThen() круглые скобки!!!
                 .doOnComplete { pairingDisposables.clear() }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
                 .andThen(firebasePairingWifi.saveRoomReference(pairingCandidate))
