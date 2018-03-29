@@ -23,7 +23,7 @@
 
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/devicesRecycler"
+        android:id="@+id/recyclerDevices"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_gravity="top"

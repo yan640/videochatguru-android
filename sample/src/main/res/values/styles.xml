@@ -14,6 +14,7 @@
 
     <style name="SplashTheme" parent="AppTheme.Base">
         <item name="android:windowBackground">@drawable/background_splash</item>
+
     </style>
 
     <style name="ToggleButtonBorderlessTextless">

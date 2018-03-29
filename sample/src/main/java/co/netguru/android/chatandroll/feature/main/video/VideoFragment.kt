@@ -153,7 +153,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         microphoneEnabledToggle.setOnCheckedChangeListener { _, enabled ->
             service?.enableMicrophone(enabled)
         }
-        devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
+        recyclerDevices.layoutManager = LinearLayoutManager(activity.ctx)
         parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
         childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         //childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
@@ -534,7 +534,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
     //<editor-fold desc="Recycler">
     override fun updateDevicesRecycler(devices: List<PairedDevice>) {
         val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
-        devicesRecycler.adapter = adapter
+        recyclerDevices.adapter = adapter
     }
     //</editor-fold>
 }

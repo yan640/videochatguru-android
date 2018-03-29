@@ -6,6 +6,6 @@ package co.netguru.android.chatandroll.data.model
 enum class Role {
     PARENT,
     CHILD,
-    UNDEFINED
+    ROLE_NOT_SET
 }
 

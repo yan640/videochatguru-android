@@ -5,7 +5,7 @@ package co.netguru.android.chatandroll.data.model
  */
 data class PairedDevice(val uuid: String = "",
                         val deviceName: String = "",
-                        var role: Role = Role.UNDEFINED,
+                        var role: Role = Role.ROLE_NOT_SET,
                         var online: Boolean = false,
                         var childName: String = "",
                         val roomUUID: String = "",

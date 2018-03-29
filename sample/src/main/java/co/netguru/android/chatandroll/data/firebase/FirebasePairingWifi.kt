@@ -115,9 +115,8 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                     .ignoreElement()
 
 
-    fun removeThisDeviceFromPaired(pairingCandidate: PairingDevice): Completable =
+    fun removeThisDeviceFromPaired(roomName: String): Completable =
             Completable.create { emitter ->
-                val roomName = choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid)
                 firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
                         .child(roomName)
                         .child(App.THIS_DEVICE_UUID)
@@ -126,6 +125,11 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
                         .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
             }
 
+
+    fun removeThisDeviceFromPaired(pairingCandidate: PairingDevice):Completable {
+        val roomName = choosePairedFolderName(App.THIS_DEVICE_UUID, pairingCandidate.uuid)
+        return removeThisDeviceFromPaired(roomName)
+    }
 
     fun saveRoomReference(otherDevice: PairingDevice): Completable = Completable.create { emitter ->
         firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
@@ -168,6 +172,14 @@ class FirebasePairingWifi @Inject constructor(private val firebaseDatabase: Fire
 
     fun connect(): Completable = Completable.fromAction {
         firebaseDatabase.goOnline()
+    }
+
+    fun removeThisDeviceFromRoomReference(): Completable = Completable.create { emitter ->
+        firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
+                .child(App.THIS_DEVICE_UUID)
+                .removeValue()
+                .addOnSuccessListener { emitter.onComplete() }
+                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
     }
 
 

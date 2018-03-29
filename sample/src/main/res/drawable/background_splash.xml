@@ -11,11 +11,11 @@
         </shape>
     </item>
 
-    <item
-        android:bottom="@dimen/splash_screen_vertical_margin"
-        android:gravity="center">
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/chat_and_roll_logo"/>
-    </item>
+    <!--<item-->
+        <!--android:bottom="@dimen/splash_screen_vertical_margin"-->
+        <!--android:gravity="center">-->
+        <!--<bitmap-->
+            <!--android:gravity="center"-->
+            <!--android:src="@drawable/chat_and_roll_logo"/>-->
+    <!--</item>-->
 </layer-list>

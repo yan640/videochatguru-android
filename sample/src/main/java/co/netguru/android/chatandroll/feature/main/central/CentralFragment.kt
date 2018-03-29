@@ -17,6 +17,7 @@ import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
+import co.netguru.android.chatandroll.data.model.Role
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.feature.main.video.PairedDevicesAdapter
 import kotlinx.android.synthetic.main.fragment_central.*
@@ -56,15 +57,10 @@ class CentralFragment :
     private var pairingConfirmationDialog: AlertDialog? = null
     private var chooseRoleDialog: AlertDialog? = null
     private var pairingProgeressDialog: AlertDialog? = null
+    private lateinit var deviceToConfirm: PairingDevice
+    private val colorUncheckedButton by lazy { resources.getColor(R.color.accent) }
+    private val colorCheckedButton by lazy { resources.getColor(R.color.button_material_dark) } // TODO save in colorRes
 
-
-
-
-    /**
-     * Служит для ограничение жизненного цикла презентера
-     * при окончательном закрытии фрагмента
-     */
-    private var isDestoyedBySystem: Boolean = false
 
 
     //<editor-fold desc="[BaseMvpFragment] methods">
@@ -80,16 +76,19 @@ class CentralFragment :
     //<editor-fold desc="Fragment lifecycle events">
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Timber.d("onCreate $this")
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+//        retainInstance = true
         btnPair.setOnClickListener { getPresenter().pairButtonClicked() }
+        btnPairMore.setOnClickListener { getPresenter().pairMoreButtonClicked() }
+        btnLeaveRoom.setOnClickListener { getPresenter().leaveRoomButtonClicked() }
         btnParentRole.setOnClickListener { getPresenter().parentRoleButtonClicked() }
         btnChildRole.setOnClickListener { getPresenter().childRoleButtonClicked() }
         btnNameOfChild.setOnClickListener { getPresenter().childNameButtonClicked() }
         recyclePairedDevices.layoutManager = LinearLayoutManager(activity.ctx)
+
     }
 
 
@@ -104,6 +103,8 @@ class CentralFragment :
 
     override fun onStop() {
         super.onStop()
+        Timber.d("on Stop")
+        pairingProgeressDialog?.dismiss()
         if (!activity.isChangingConfigurations) {
             App.get(activity.application).destroyFragmentComponent()
         }
@@ -112,13 +113,12 @@ class CentralFragment :
     override fun onDestroyView() {
         super.onDestroyView()
         getPresenter().onDestroyView()
+
     }
 
 
     override fun onDestroy() {
         super.onDestroy()
-        Timber.d("onDestroy")
-
     }
 
     //</editor-fold>
@@ -164,6 +164,7 @@ class CentralFragment :
     }
 
     override fun showSetChildNameDialog(currentChildName: String?) {
+        Timber.d("showSetChildNameDialog")
         alert("Write the name of child") {
             customView {
                 verticalLayout {
@@ -184,7 +185,7 @@ class CentralFragment :
         }.show()
     }
 
-    override fun showChooseRoleDialog() {
+    override fun showChooseRoleDialog() {  // TODO not used
         if (chooseRoleDialog?.isShowing != true) {
             chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
                 title = "Parent or child?"
@@ -228,53 +229,69 @@ class CentralFragment :
     //</editor-fold>
 
 
-
-
-
     //<editor-fold desc="mvpView State">
 
-    override fun setNoOnePairedState() {
-        btnPair.text = "Pair" // TODO to strRes
-        btnPair.visibility = View.VISIBLE
+    override fun setNotPairedState() {
+        pairingProgeressDialog?.dismiss()  // TODO ??
+        pairingConfirmationDialog?.cancel()
+        btnPair.visibility = View.VISIBLE //TODO move to center
         btnChildRole.visibility = View.GONE
         btnParentRole.visibility = View.GONE
         btnNameOfChild.visibility = View.GONE
+        btnPairMore.visibility = View.GONE
+        btnLeaveRoom.visibility = View.GONE
+        recyclePairedDevices.visibility = View.GONE
     }
 
-    override fun setHasPairedDeviceState() {
-        btnPair.text = "Add more to room" // TODO to strRes
-        btnPair.visibility = View.VISIBLE  // TODO семестить вниз
+    override fun setPairingState() {
+        //setNotPairedState() //TODO провороте экрана проподают уже соед. устр-ва
+        showPairingProgressDialog()
+    }
+
+
+    override fun setConfirmationState(device: PairingDevice) {
+        pairingProgeressDialog?.dismiss()
+       // setNotPairedState()   //TODO провороте экрана проподают уже соед. устр-ва
+        showPairingConfirmationDialog(device)
+    }
+
+
+    override fun setPairedState(role: Role, pairedDevices: List<PairedDevice>, childName: String) {
+        pairingProgeressDialog?.dismiss()
+        pairingConfirmationDialog?.cancel()
+        btnPair.visibility = View.GONE  // TODO семестить вниз
+        btnPairMore.visibility = View.VISIBLE
         btnChildRole.visibility = View.VISIBLE
         btnParentRole.visibility = View.VISIBLE
-        btnNameOfChild.visibility = View.GONE
+        btnLeaveRoom.visibility = View.VISIBLE
+        when (role) {
+            Role.ROLE_NOT_SET -> {
+                btnNameOfChild.visibility = View.GONE
+                recyclePairedDevices.visibility = View.VISIBLE
+                updateDevicesRecycler(pairedDevices)
+                btnChildRole.backgroundColor = colorUncheckedButton
+                btnParentRole.backgroundColor = colorUncheckedButton
+            }
+            Role.PARENT -> {
+                btnNameOfChild.visibility = View.GONE
+                recyclePairedDevices.visibility = View.VISIBLE
+                updateDevicesRecycler(pairedDevices)
 
+                btnChildRole.backgroundColor = colorCheckedButton
+                btnParentRole.backgroundColor = colorUncheckedButton
+            }
+            Role.CHILD -> {
+                btnNameOfChild.visibility = View.VISIBLE
+                recyclePairedDevices.visibility = View.GONE
+                btnParentRole.backgroundColor = colorCheckedButton
+                btnChildRole.backgroundColor = colorUncheckedButton
+                btnNameOfChild.text = childName
+            }
+        }
     }
 
-    override fun setParentRoleState() {
-        btnPair.text = "Add more to room" // TODO to strRes
-        btnPair.visibility = View.VISIBLE  // TODO семестить вниз
-        btnChildRole.visibility = View.VISIBLE
-        btnParentRole.visibility = View.VISIBLE
-        btnNameOfChild.visibility = View.GONE
-        setParentButtonChecked(true)
-        setChildButtonChecked(false)
-    }
-
-    override fun setChildRoleState() {
-        btnPair.text = "Add more to room" // TODO to strRes
-        btnPair.visibility = View.VISIBLE  // TODO семестить вниз
-        btnChildRole.visibility = View.VISIBLE
-        setChildButtonChecked(true)
-        setParentButtonChecked(false)
-
-        btnParentRole.visibility = View.VISIBLE
-
-        btnNameOfChild.visibility = View.VISIBLE // TODO  проверить что имя задано
-
-    }
 
     //</editor-fold>
-
 
 
     //<editor-fold desc="Buttons">
@@ -282,7 +299,6 @@ class CentralFragment :
     override fun setPairButtonText(text: String) {
         btnPair.text = text
     }
-
 
 
     override fun hideChildButtonWithAnimation() {
@@ -298,22 +314,6 @@ class CentralFragment :
                 }
                 .start()
     }
-
-
-    override fun setParentButtonChecked(isChecked: Boolean) {
-        if (isChecked)
-            btnParentRole.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-        else
-            btnParentRole.backgroundColor = resources.getColor(R.color.primary)
-    }
-
-    override fun setChildButtonChecked(isChecked: Boolean) {
-        if (isChecked)
-            btnChildRole.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-        else
-            btnChildRole.backgroundColor = resources.getColor(R.color.primary)
-    }
-
 
 
     override fun hideChildName() {
@@ -336,7 +336,6 @@ class CentralFragment :
         btnParentRole.visibility = View.GONE
     }
     //</editor-fold>
-
 
 
     //<editor-fold desc="Snackbar and messages">
@@ -383,8 +382,18 @@ class CentralFragment :
 
     //<editor-fold desc="Recycler">
     override fun updateDevicesRecycler(devices: List<PairedDevice>) {
-        val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
-        devicesRecycler.adapter = adapter
+        if (devices.isNotEmpty()) {
+            Timber.d("is NOT Empty")
+            recyclePairedDevices.visibility = View.VISIBLE
+            tvEmptyRecycle.visibility = View.GONE
+            val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
+            recyclePairedDevices.adapter = adapter
+        }
+        else {
+            Timber.d("is Empty")
+            recyclePairedDevices.visibility = View.GONE
+            tvEmptyRecycle.visibility = View.VISIBLE
+        }
     }
     //</editor-fold>
 

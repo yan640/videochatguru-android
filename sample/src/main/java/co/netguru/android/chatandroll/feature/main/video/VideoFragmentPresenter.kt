@@ -39,9 +39,6 @@ class VideoFragmentPresenter @Inject constructor(
 
 ) : BasePresenter<VideoFragmentView>() {
 
-    init {
-        Timber.d("constructor = ${this}")
-    }
 
     private val actualPairedDataDisposables = CompositeDisposable()
     private var pairedDisposable = Disposables.disposed()
@@ -272,7 +269,7 @@ class VideoFragmentPresenter @Inject constructor(
                     setParentButtonChecked(true)
                     hideChildName()
                 }
-                Role.UNDEFINED -> {
+                Role.ROLE_NOT_SET -> {
                     showChooseRoleDialog()
                     showParentChildButtons()
                     hideChildName()

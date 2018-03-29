@@ -11,7 +11,8 @@ import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.FirebasePairingWifi
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
-import co.netguru.android.chatandroll.data.model.Role
+import co.netguru.android.chatandroll.data.model.Role.*
+import co.netguru.android.chatandroll.data.model.State.*
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import com.google.firebase.database.DataSnapshot
 import io.reactivex.Completable
@@ -20,7 +21,6 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposables
 import io.reactivex.rxkotlin.plusAssign
 import io.reactivex.rxkotlin.subscribeBy
-import org.jetbrains.anko.collections.forEachWithIndex
 import timber.log.Timber
 
 class CentralFragmentPresenter(private val appContext: Context,
@@ -45,39 +45,34 @@ class CentralFragmentPresenter(private val appContext: Context,
     private var pairingCandidate: PairingDevice? = null
 
 
-    enum class State {
-        PAIRING,
-        NORMAL
-    }
+    private var viewState = UNDEFINED_STATE
+    private var role = ROLE_NOT_SET
 
-    var appState = State.NORMAL
+    private var childName: String = ""
+
 
 
     //<editor-fold desc="BasePresenter methods">
+
     override fun attachView(mvpView: CentralFragmentView) {
         super.attachView(mvpView)
-        onAttachView()
-
+        updateUI()
     }
 
     override fun detachView() {
         super.detachView()
     }
 
+
     //</editor-fold>
 
 
     //<editor-fold desc="Fragment (View) Lifecycle Events">
 
-    private fun onAttachView() {
-        getDataFromServer()
-    }
-
 
     fun onDestroyView() {
         // TODO
     }
-
 
     //</editor-fold>
 
@@ -86,10 +81,15 @@ class CentralFragmentPresenter(private val appContext: Context,
 
     fun pairButtonClicked() {
         app.CURRENT_WIFI_BSSID?.let {
+            viewState = PAIRING
+            updateUI()
             startWifiPairing(it)
-            getView()?.showPairingProgressDialog()
         } ?: getView()?.showSnackbarFromString("Connect phones to one Wifi!") // TODO to strRes
         // TODO добавить альтернативный вариант подключения при отсутствии общего wifi
+    }
+
+    fun pairMoreButtonClicked() {
+        TODO("not implemented")
     }
 
 
@@ -98,7 +98,8 @@ class CentralFragmentPresenter(private val appContext: Context,
      * and listen for ready in that folder
      */
     private fun startWifiPairing(wifiBSSID: String) {
-        actualPairedDataDisposables.clear()
+        actualPairedDataDisposables.clear()  // TODO будет заново загружать данные если сделать add
+        listOfPairedDevices.clear()
         pairingDisposables += firebasePairingWifi.connect()
                 .andThen(firebasePairingWifi.addDeviceToPairing(wifiBSSID))
                 .andThen(firebasePairingWifi.listenPairingFolder(wifiBSSID))
@@ -128,8 +129,8 @@ class CentralFragmentPresenter(private val appContext: Context,
             is ChildEventAdded<DataSnapshot> -> {
                 if (device.uuid != App.THIS_DEVICE_UUID) {
                     pairingCandidate = device
-                    getView()?.closePairingProgressDialog()
-                    getView()?.showPairingConfirmationDialog(device)
+                    viewState = CONFIRMATION
+                    updateUI()
                 }
             }
             is ChildEventRemoved<DataSnapshot> ->
@@ -160,8 +161,8 @@ class CentralFragmentPresenter(private val appContext: Context,
     }
 
     fun stopPairing() {
-        getView()?.closePairingProgressDialog()
-        getView()?.closePairingConfirmationDialog()
+      //  viewState = NOT_PAIRED // TODO запрос на аскуальные данные
+      //  updateUI()
         pairingDisposables.clear()
         removeThisDeviceFromPaired()
                 .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
@@ -169,7 +170,8 @@ class CentralFragmentPresenter(private val appContext: Context,
                 .subscribeBy(
                         onComplete = {
                             pairingCandidate = null
-                            getView()?.setNoOnePairedState() // TODO отображать только если нет других paired devices
+                            getDataFromServer()
+
                         },
                         onError = { Timber.d(it.fillInStackTrace()) }
                 )
@@ -192,11 +194,12 @@ class CentralFragmentPresenter(private val appContext: Context,
      * SharedPreferences или FirebaseDB
      */
     private fun getDataFromServer() {
+        Timber.d("get data")
         actualPairedDataDisposables += firebasePairingWifi.connect()
                 .andThen(getDeviceUUid())
                 .doOnSuccess { App.THIS_DEVICE_UUID = it }
                 .flatMapPublisher { firebasePairingWifi.listenRoomReference(it) }
-                .doOnNext { Timber.d("get Room id = $it") }
+                .doOnNext { App.CURRENT_ROOM_ID = it }
                 .flatMap { firebasePairingWifi.listenRoom(it) }
                 .doOnNext { Timber.d("get paired device in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
@@ -204,7 +207,7 @@ class CentralFragmentPresenter(private val appContext: Context,
                         onNext = {
                             updateLocalListOfPairedDevices(it)
                         }
-                )
+                ) // TODO если нет данных отобразить кнопку PAir
     }
 
     private fun getDeviceUUid(): Single<String> {
@@ -229,38 +232,40 @@ class CentralFragmentPresenter(private val appContext: Context,
             }
         }
         // Проверяем что в списке есть наше устройство и хотябы одно другое
-        if (thisDeviceDataFromPaired != null
-                && listOfOtherDevicePaired.isNotEmpty()) {
+        if (thisDeviceDataFromPaired != null) {
+            Timber.d("this device = $thisDeviceDataFromPaired")
             setDeviceOnline()
-            updateUI()
+            viewState = PAIRED
+            thisDeviceDataFromPaired?.let {
+                role = it.role
+                childName = it.childName
+            }
+
         } else {
-            getView()?.setNoOnePairedState()
+            Timber.d("not paired")
+            viewState = NOT_PAIRED
         }
+        updateUI()
 
         // TODO удалить комнату из базы если там одно устройство или нашу ссылку на комнату если нашего устройства нет в списке
-
-        listOfPairedDevices.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.deviceName}") }
     }
 
 
     private fun updateUI() = getView()?.run {
-        setHasPairedDeviceState()
-        updateDevicesRecycler(listOfOtherDevicePaired) // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
-        thisDeviceDataFromPaired?.let {
-            when (it.role) {
-                Role.CHILD -> {
-                    setChildRoleState()
-                }
-                Role.PARENT -> {
-                    setParentRoleState()
-                }
-                Role.UNDEFINED -> {
-                    setHasPairedDeviceState()
-                    showChooseRoleDialog()
-                }
+        when (viewState) {
+            UNDEFINED_STATE -> this@CentralFragmentPresenter.getDataFromServer()
+            NOT_PAIRED -> setNotPairedState()
+            PAIRING -> {
+                setPairingState()
+                Timber.d("setsetPairingState")
             }
+            CONFIRMATION -> pairingCandidate?.let { setConfirmationState(it) }
+            PAIRED -> setPairedState(role, listOfOtherDevicePaired, childName)
         }
+        updateDevicesRecycler(listOfOtherDevicePaired) // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
+
     }
+
 
     private fun pushThisDeviceDataToServer(thisDevice: PairedDevice) {
         firebasePairingWifi.updateThisDeviceData(thisDevice)
@@ -276,25 +281,27 @@ class CentralFragmentPresenter(private val appContext: Context,
 
     }
 
-    fun parentRoleButtonClicked() = getView()?.run {
-        setParentRoleState()
-        hideChildName()
+    fun parentRoleButtonClicked() {
+        role = PARENT
+        viewState = PAIRED
         thisDeviceDataFromPaired?.run {
-            role = Role.PARENT
+            role = PARENT
+            updateUI()
             pushThisDeviceDataToServer(this)
         }
     }
 
 
-    fun childRoleButtonClicked() = getView()?.run {
-        setChildRoleState()
+    fun childRoleButtonClicked() {
+        role = CHILD
+        viewState = PAIRED
         thisDeviceDataFromPaired?.run {
-            role = Role.CHILD
+            role = CHILD
+            updateUI()
+            if (childName.isBlank()) {
+                getView()?.showSetChildNameDialog()
+            }
             pushThisDeviceDataToServer(this)
-            if (childName.isNotBlank())
-                showChildName(childName)
-            else
-                showSetChildNameDialog()
         }
     }
 
@@ -315,7 +322,23 @@ class CentralFragmentPresenter(private val appContext: Context,
         getView()?.showSetChildNameDialog(thisDeviceDataFromPaired?.childName)
     }
 
-    //</editor-fold>
+    fun leaveRoomButtonClicked() {
+        actualPairedDataDisposables.clear()
+        firebasePairingWifi.removeThisDeviceFromPaired(App.CURRENT_ROOM_ID)
+                .doOnComplete { Timber.d("removeThisDeviceFromPaired") }
+                .andThen(firebasePairingWifi.removeThisDeviceFromRoomReference())
+                .doOnComplete { Timber.d("removeThisDeviceFromRoomReference()") }
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy (
+                        onComplete = {
+                            listOfPairedDevices.clear()
+                            viewState = NOT_PAIRED
+                            updateUI()
+                        }
+                )
+    }
+
+//</editor-fold>
 
 
 }

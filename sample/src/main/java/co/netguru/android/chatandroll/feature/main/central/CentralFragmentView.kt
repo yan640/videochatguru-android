@@ -2,6 +2,7 @@ package co.netguru.android.chatandroll.feature.main.central
 
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
+import co.netguru.android.chatandroll.data.model.Role
 import co.netguru.android.chatandroll.feature.base.MvpView
 
 interface CentralFragmentView:MvpView {
@@ -23,8 +24,8 @@ interface CentralFragmentView:MvpView {
     fun showParentChildButtons()
     fun hideParentChildButtons()
     fun setPairButtonText(text:String)
-    fun setParentButtonChecked(isChecked:Boolean)
-    fun setChildButtonChecked(isChecked:Boolean)
+//    fun setParentButtonChecked(isChecked:Boolean)
+//    fun setChildButtonChecked(isChecked:Boolean)
     //</editor-fold>
 
 
@@ -40,10 +41,10 @@ interface CentralFragmentView:MvpView {
     fun hideChildName()
     fun showChildName(childName:String)
 
-    fun setNoOnePairedState()
-    fun setHasPairedDeviceState()
-    fun setParentRoleState()
-    fun setChildRoleState()
+    fun setNotPairedState()
+    fun setPairingState()
+    fun setConfirmationState(device: PairingDevice)
+    fun setPairedState(role: Role, pairedDevices:List<PairedDevice>, childName: String)
 
 
 
