@@ -229,6 +229,7 @@ class VideoFragmentPresenter @Inject constructor(
                 }
                 .flatMapPublisher { firebasePairingWifi.listenRoomReference(it) }
                 .doOnNext {
+                    App.CURRENT_ROOM_ID = it
                     Timber.d("get Room id = $it")
                 }
                 .flatMap { firebasePairingWifi.listenRoom(it) }

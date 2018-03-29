@@ -236,6 +236,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                                     //childNameButton.text = childName.text.toString()  // TODO через презентер
                         } else
                             toast("Child name is blank!")
+                        showSetChildNameDialog()
                     }
                 }
             }

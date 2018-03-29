@@ -39,6 +39,7 @@ class ChildFragmentPresenter @Inject constructor(
 
     private val actualPairedDataDisposables = CompositeDisposable()
     private var pairedDisposable = Disposables.disposed()
+    private var checkChildFolderDisposable = Disposables.disposed()
 
     private val pairingDisposables = CompositeDisposable()
     private var childDisposable = Disposables.disposed()
@@ -51,6 +52,7 @@ class ChildFragmentPresenter @Inject constructor(
     private val app: App by lazy { App.get(appContext) }
 
     private val listOfChildrens = mutableListOf<Child>()
+    var childrenKey = ""
 //    private val currentDevicePaired
 //        get() = listOfChildrens.find { it.uuid == App.THIS_DEVICE_UUID }
 //
@@ -78,7 +80,7 @@ class ChildFragmentPresenter @Inject constructor(
     //<editor-fold desc="Fragment (View) Lifecycle Events">
 
     fun onViewCreated() {
-        getDataFromServer()
+        checkChildFolderForEmpty()
     }
 
     fun onDestroyView() {
@@ -218,7 +220,26 @@ class ChildFragmentPresenter @Inject constructor(
 
 
     //<editor-fold desc="After pairing">
+    private fun checkChildFolderForEmpty() {
+        checkChildFolderDisposable =  firebaseChild.listenChildFolder(App.CURRENT_ROOM_ID)
+                .compose(RxUtils.applySingleIoSchedulers())
+                .subscribeBy(
+                        onSuccess = {
+                            Timber.d(it.toString())
+                            if (it.hasChildren()) getDataFromServer()
+                            else getView()?.showSetChildNameDialog()
+                            checkChildFolderDisposable.dispose()
+                            //  updateLocalListOfChildes(it)
+                        },
+                        onError = {
 
+
+                            Timber.d(it.fillInStackTrace())
+                            checkChildFolderDisposable.dispose()
+                        }
+
+                )
+    }
     /**
      * Получает и отслеживает актуальные данные доступные данному усторйству из
      * SharedPreferences или FirebaseDB
@@ -232,7 +253,7 @@ class ChildFragmentPresenter @Inject constructor(
                             updateLocalListOfChildes(it)
                         },
                         onError = {
-                            getView()?.showSetChildNameDialog()
+                            Timber.d(it.fillInStackTrace())
                         },
                         onComplete = {
                             getView()?.showSetChildNameDialog()
@@ -248,6 +269,40 @@ class ChildFragmentPresenter @Inject constructor(
             firebasePairedOnline.getMeNewKey()
         }
     }
+
+//    private fun updateLocalListOfChildes(dataSnapshot: DataSnapshot ) {
+//
+//
+//            if (dataSnapshot.hasChildren()  ){
+//                for (child  in dataSnapshot.children) {   // TODO прилетает пустой снапшот и несколько раз
+//                    listOfChildrens.add(child.value as Child)
+//                }
+//                if (listOfChildrens.size==1){
+//                    // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
+//                    startChildVideo()
+//                }
+//                else
+//                {
+//                    // TODO Показать рекуклер вью с детьми и ждать выбора
+//                }
+//            }
+//            else {
+//                //  Показать меню выбора имени ребенка
+//                getView()?.showSetChildNameDialog()
+//                // TODO сохарнить нового ребенка
+//                // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
+//                // TODO startChildVideo()
+//
+//            }
+//
+//
+//           // setDeviceOnline()
+//            updateUI()
+//        }
+
+
+
+
 
 
     private fun updateLocalListOfChildes(childEvent: ChildEvent<DataSnapshot>) {
@@ -266,6 +321,8 @@ class ChildFragmentPresenter @Inject constructor(
         if (listOfChildrens != null ) {
             if (listOfChildrens.size==1)
             {
+                childrenKey=listOfChildrens[0].key
+                firebaseChild.setChildOnline(listOfChildrens.first  { it.key == childrenKey })
                 // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
                 startChildVideo()
             }
@@ -277,14 +334,14 @@ class ChildFragmentPresenter @Inject constructor(
 
            // setDeviceOnline()
             updateUI()
-        } else {
-            //  Показать меню выбора имени ребенка
-            getView()?.showSetChildNameDialog()
-            // TODO сохарнить нового ребенка
-            // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
-            // TODO startChildVideo()
-
-        }
+        } //else {
+//            //  Показать меню выбора имени ребенка
+//            getView()?.showSetChildNameDialog()
+//            // TODO сохарнить нового ребенка
+//            // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
+//            // TODO startChildVideo()
+//
+//        }
 
 
 
@@ -329,42 +386,26 @@ class ChildFragmentPresenter @Inject constructor(
 
     }
 
-//    fun parentRoleButtonClicked() = getView()?.run {
-//        setParentButtonChecked(true)
-//        setChildButtonChecked(false)
-//        hideChildName()
-//        currentDevicePaired?.run {
-//            role = Role.PARENT
-//            pushThisDeviceDataToServer(this)
-//        }
-//    }
-//
-//
-//    fun childRoleButtonClicked() = getView()?.run {
-//        setChildButtonChecked(true)
-//        setParentButtonChecked(false)
-//        currentDevicePaired?.run {
-//            role = Role.CHILD
-//            pushThisDeviceDataToServer(this)
-//            if (childName.isNotBlank())
-//                showChildName(childName)
-//            else
-//                showSetChildNameDialog()
-//        }
-//    }
 
 
-    fun setChildName(childName: String) =   {
-        childDisposable = firebaseChild.saveThisChildInPaired(childName)
-
+    fun setChildName(childName: String)     {
+        childDisposable =firebaseChild.getKeyForNewChild()
+                .doOnSuccess{
+                    Timber.d("get children Key  = $it")
+                    childrenKey = it
+                }
+                .flatMapCompletable {    firebaseChild.saveThisChildInPaired(childName,it) }
+                .doOnComplete {  }
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onComplete = {
                             //getView()?.showSnackbarFromString("You and device ${pairingCandidate.name} paired!") // TODO to stringRes
                             this.pairingCandidate = null
+
                             childDisposable.dispose()
-                            startChildVideo()
                             getDataFromServer()
+                            startChildVideo()
+
                         },
                         onError = { TODO("not implemented") }
                 )
