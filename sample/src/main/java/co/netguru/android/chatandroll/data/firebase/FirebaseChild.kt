@@ -39,6 +39,7 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 
 
     private lateinit var pairingReferenceThisDevice: DatabaseReference
+    private lateinit var childReference: DatabaseReference
     private val app: App by lazy { App.get(appContext) }
 
 
@@ -109,20 +110,20 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 
 
     fun setChildOnline(child: Child ): Completable = Completable.create { emitter ->
-        pairingReferenceThisDevice = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+          childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
                 .child(App.CURRENT_ROOM_ID)
                 .child(CHILD)
                 .child(child.key)
-        with(pairingReferenceThisDevice) {
-            onDisconnect().removeValue()
-            setValue(Child(
+        childReference
+                .setValue(child)
+                .addOnCompleteListener { emitter.onComplete() }
+                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
+        childReference.child(Child::online.name).onDisconnect().removeValue() // при отключении удаляет статус online, а default value = offline
+        childReference.child(Child::phoneModel.name).onDisconnect().removeValue() // при отключении удаляет phoneModel, а default value = ""
+        childReference.child(Child::phoneUuid.name).onDisconnect().removeValue() // при отключении удаляет phoneUuid, а default value = ""
 
-                    phoneUuid = App.THIS_DEVICE_UUID,
-                    phoneModel = App.THIS_DEVICE_MODEL,
-                    online = true))
-                    .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
-        }
-        emitter.onComplete()
+
+
     }
 
 
@@ -173,13 +174,23 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 //                    .filter { it.value != null }
 //                    .map { it.getValue(Child::class.java) as Child }
 
+//    fun listenChildFolder(roomUuid: String  ): Flowable< DataSnapshot > =
+//            firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
+//                    .child(roomUuid)
+//                    .child(CHILD).rxValueEvents()
+//
+//                   // .filter { it.value != null }
+//                    .map { it   }
+
+
     fun listenChildFolder(roomUuid: String  ): Single< DataSnapshot > =
-            firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
+            firebaseDatabase.getReference(PAIRED_ROOMS_PATH)
                     .child(roomUuid)
                     .child(CHILD)
                     .rxSingleValue()
-                   // .filter { it.value != null }
-                    .map { it   }
+
+
+
 //    fun listenChildFolder(roomUuid: String  ): Flowable< DataSnapshot > =
 //            firebaseDatabase.getReference(ROOM_REFERENCE_PATH)
 //                    .child(roomUuid)

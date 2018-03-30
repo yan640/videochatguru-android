@@ -5,8 +5,8 @@ package co.netguru.android.chatandroll.data.model
  */
 data class Child(var childName: String = "",
                  val key: String = "",
-                 val phoneUuid: String = "",
-                 val phoneModel: String = "",
+                 var phoneUuid: String = "",
+                 var phoneModel: String = "",
                  var online: Boolean = false,
                  var useFrontCamera: Boolean = false,
                  var useFlashLight: Boolean = false)

@@ -37,7 +37,7 @@ class ChildFragmentPresenter @Inject constructor(
         private val firebaseChild: FirebaseChild
 ) : BasePresenter<ChildFragmentView>() {
 
-    private val actualPairedDataDisposables = CompositeDisposable()
+    private val onDestroyDestroedDisposables = CompositeDisposable()
     private var pairedDisposable = Disposables.disposed()
     private var checkChildFolderDisposable = Disposables.disposed()
 
@@ -53,8 +53,8 @@ class ChildFragmentPresenter @Inject constructor(
 
     private val listOfChildrens = mutableListOf<Child>()
     var childrenKey = ""
-//    private val currentDevicePaired
-//        get() = listOfChildrens.find { it.uuid == App.THIS_DEVICE_UUID }
+    private val childPicked
+        get() = listOfChildrens.find { it.key == childrenKey }
 //
 //    private val listOfOtherDevicePaired
 //        get() = listOfChildrens.filter { it.uuid != App.THIS_DEVICE_UUID }
@@ -84,7 +84,8 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
     fun onDestroyView() {
-        actualPairedDataDisposables.clear()
+        firebaseChild.disconnect()
+        onDestroyDestroedDisposables.clear()
         if (appState == State.PAIRING)
             stopPairing()
         listOfChildrens.clear()
@@ -132,7 +133,7 @@ class ChildFragmentPresenter @Inject constructor(
      * and listen for ready in that folder
      */
     private fun startWifiPairing(wifiBSSID: String) {
-        actualPairedDataDisposables.clear()
+        onDestroyDestroedDisposables.clear()
         pairingDisposables += firebasePairingWifi.connect()
                 .andThen(firebasePairingWifi.addDeviceToPairing(wifiBSSID))
                 .andThen(firebasePairingWifi.listenPairingFolder(wifiBSSID))
@@ -232,12 +233,8 @@ class ChildFragmentPresenter @Inject constructor(
                             //  updateLocalListOfChildes(it)
                         },
                         onError = {
-
-
                             Timber.d(it.fillInStackTrace())
-                            checkChildFolderDisposable.dispose()
-                        }
-
+                            checkChildFolderDisposable.dispose()}
                 )
     }
     /**
@@ -245,7 +242,7 @@ class ChildFragmentPresenter @Inject constructor(
      * SharedPreferences или FirebaseDB
      */
     private fun getDataFromServer() {
-        actualPairedDataDisposables +=  firebaseChild.listenRoom(App.CURRENT_ROOM_ID)
+        onDestroyDestroedDisposables +=  firebaseChild.listenRoom(App.CURRENT_ROOM_ID)
                 .doOnNext { Timber.d("get paired device in room = $it") }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
@@ -262,6 +259,9 @@ class ChildFragmentPresenter @Inject constructor(
                 )
     }
 
+    private fun updateListOfChildes(childEvent: ChildEvent<DataSnapshot>) {}
+
+
     private fun getDeviceUUid(): Single<String> {
         return if (SharedPreferences.hasToken(appContext)) {
             Single.just(SharedPreferences.getToken(appContext))
@@ -269,39 +269,6 @@ class ChildFragmentPresenter @Inject constructor(
             firebasePairedOnline.getMeNewKey()
         }
     }
-
-//    private fun updateLocalListOfChildes(dataSnapshot: DataSnapshot ) {
-//
-//
-//            if (dataSnapshot.hasChildren()  ){
-//                for (child  in dataSnapshot.children) {   // TODO прилетает пустой снапшот и несколько раз
-//                    listOfChildrens.add(child.value as Child)
-//                }
-//                if (listOfChildrens.size==1){
-//                    // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
-//                    startChildVideo()
-//                }
-//                else
-//                {
-//                    // TODO Показать рекуклер вью с детьми и ждать выбора
-//                }
-//            }
-//            else {
-//                //  Показать меню выбора имени ребенка
-//                getView()?.showSetChildNameDialog()
-//                // TODO сохарнить нового ребенка
-//                // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
-//                // TODO startChildVideo()
-//
-//            }
-//
-//
-//           // setDeviceOnline()
-//            updateUI()
-//        }
-
-
-
 
 
 
@@ -322,17 +289,22 @@ class ChildFragmentPresenter @Inject constructor(
             if (listOfChildrens.size==1)
             {
                 childrenKey=listOfChildrens[0].key
-                firebaseChild.setChildOnline(listOfChildrens.first  { it.key == childrenKey })
+
+                childPicked?.run {
+                    phoneUuid = App.THIS_DEVICE_UUID
+                    phoneModel = App.THIS_DEVICE_MODEL
+                    online = true
+                    setChildOnline(this)}
+
                 // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
-                startChildVideo()
+
             }
             else
             {
                 // TODO Показать рекуклер вью с детьми и ждать выбора
             }
 
-
-           // setDeviceOnline()
+          // setDeviceOnline()
             updateUI()
         } //else {
 //            //  Показать меню выбора имени ребенка
@@ -340,12 +312,24 @@ class ChildFragmentPresenter @Inject constructor(
 //            // TODO сохарнить нового ребенка
 //            // TODO Передать онлайн данные в чайлд и поставить удаление на дисконнект
 //            // TODO startChildVideo()
-//
-//        }
-
-
 
         listOfChildrens.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.childName}") }
+    }
+
+    private fun setChildOnline(child: Child) {
+        onDestroyDestroedDisposables +=  firebaseChild.setChildOnline(child)
+
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+
+                        onError = {
+                            Timber.d(it.fillInStackTrace())
+                        },
+                        onComplete = {
+                            startChildVideo()
+                        }
+
+                )
     }
 
 
@@ -404,7 +388,7 @@ class ChildFragmentPresenter @Inject constructor(
 
                             childDisposable.dispose()
                             getDataFromServer()
-                            startChildVideo()
+
 
                         },
                         onError = { TODO("not implemented") }
@@ -417,28 +401,10 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
 
-//    fun setDeviceOnline() = currentDevicePaired?.let {
-//        it.online = true
-//        pushThisDeviceDataToServer(it)
-//
-//    }
-//
-//    fun childNameButtonClicked() {
-//        getView()?.showSetChildNameDialog(currentDevicePaired?.childName)
-//    }
 
-    fun childListener() {
-
-    }
-
-
-    //</editor-fold>
-
-
-    //<editor-fold desc="WebRTC video">
 
     fun startChildVideo() {
-        actualPairedDataDisposables += firebasePairedOnline.connect()
+        onDestroyDestroedDisposables += firebasePairedOnline.connect()
                 .andThen(firebasePairedOnline.getRoomId())
 
                 .compose(RxUtils.applySingleIoSchedulers())
@@ -460,7 +426,7 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
      fun startConnection() {
-        actualPairedDataDisposables += firebaseSignalingOnline.connect()
+        onDestroyDestroedDisposables += firebaseSignalingOnline.connect()
                 .andThen(firebaseSignalingDisconnect.cleanDisconnectOrders()) // повторяется в след методе
                 .doOnComplete { listenForDisconnectOrders() }
                 .andThen(firebaseSignalingOnline.setOnlineAndRetrieveRandomDevice())
@@ -498,7 +464,7 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
     private fun disconnect() {
-        actualPairedDataDisposables += firebaseSignalingOnline.disconnect()
+        onDestroyDestroedDisposables += firebaseSignalingOnline.disconnect()
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onError = {
@@ -523,7 +489,7 @@ class ChildFragmentPresenter @Inject constructor(
     fun disconnectByUser() {
         val remoteUuid = getView()?.remoteUuid
         if (remoteUuid != null) {
-            actualPairedDataDisposables += firebaseSignalingDisconnect.sendDisconnectOrderToOtherParty(remoteUuid)
+            onDestroyDestroedDisposables += firebaseSignalingDisconnect.sendDisconnectOrderToOtherParty(remoteUuid)
                     .compose(RxUtils.applyCompletableIoSchedulers())
                     .subscribeBy(
                             onComplete = {
