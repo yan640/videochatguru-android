@@ -21,6 +21,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposables
 import io.reactivex.rxkotlin.plusAssign
 import io.reactivex.rxkotlin.subscribeBy
+import org.jetbrains.anko.collections.forEachWithIndex
 import timber.log.Timber
 
 class CentralFragmentPresenter(private val appContext: Context,
@@ -51,7 +52,6 @@ class CentralFragmentPresenter(private val appContext: Context,
     private var childName: String = ""
 
 
-
     //<editor-fold desc="BasePresenter methods">
 
     override fun attachView(mvpView: CentralFragmentView) {
@@ -80,7 +80,7 @@ class CentralFragmentPresenter(private val appContext: Context,
     //<editor-fold desc="Pairing">
 
     fun pairButtonClicked() {
-        app.CURRENT_WIFI_BSSID?.let {
+        app.CURRENT_WIFI_BSSID?.let {  // todo перенести все что связано с контехт во mvpView
             viewState = PAIRING
             updateUI()
             startWifiPairing(it)
@@ -92,17 +92,22 @@ class CentralFragmentPresenter(private val appContext: Context,
         TODO("not implemented")
     }
 
+    fun onPairingConfirmationCancel() {
+        stopPairing()
+    }
 
     /**
      * Add your device to FDB folder "wifi_pair_devices/YOUR_WIFI"
      * and listen for ready in that folder
      */
     private fun startWifiPairing(wifiBSSID: String) {
-        actualPairedDataDisposables.clear()  // TODO будет заново загружать данные если сделать add
+        actualPairedDataDisposables.clear() // TODO будет заново загружать данные если сделать add
         listOfPairedDevices.clear()
         pairingDisposables += firebasePairingWifi.connect()
+                .doOnSubscribe { /*Show pairing dialog */ }
                 .andThen(firebasePairingWifi.addDeviceToPairing(wifiBSSID))
                 .andThen(firebasePairingWifi.listenPairingFolder(wifiBSSID))
+                .doOnTerminate { /*Close pairing dialog */  }
                 .compose(RxUtils.applyFlowableIoSchedulers())
                 .subscribeBy(
                         onNext = {
@@ -145,7 +150,10 @@ class CentralFragmentPresenter(private val appContext: Context,
     fun confirmPairingAndWaitForOther(pairingCandidate: PairingDevice) {
         pairedDisposable = firebasePairingWifi.saveThisDeviceInPaired(pairingCandidate)
                 .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) //  в andThen() круглые скобки!!!
-                .doOnComplete { pairingDisposables.clear() }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
+                .doOnComplete {
+                    pairingDisposables.clear()
+                    Timber.d("pairingDisposables.clear()")
+                }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
                 .andThen(firebasePairingWifi.saveRoomReference(pairingCandidate))
                 .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())
@@ -154,6 +162,7 @@ class CentralFragmentPresenter(private val appContext: Context,
                             getView()?.showSnackbarFromString("You and device ${pairingCandidate.name} paired!") // TODO to stringRes
                             this.pairingCandidate = null
                             pairedDisposable.dispose()
+                            viewState = PAIRED
                             getDataFromServer()
                         },
                         onError = { TODO("not implemented") }
@@ -161,8 +170,9 @@ class CentralFragmentPresenter(private val appContext: Context,
     }
 
     fun stopPairing() {
-      //  viewState = NOT_PAIRED // TODO запрос на аскуальные данные
-      //  updateUI()
+        //  viewState = NOT_PAIRED // TODO запрос на аскуальные данные
+        //  updateUI()
+        Timber.d("stopPairing()")
         pairingDisposables.clear()
         removeThisDeviceFromPaired()
                 .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
@@ -194,7 +204,7 @@ class CentralFragmentPresenter(private val appContext: Context,
      * SharedPreferences или FirebaseDB
      */
     private fun getDataFromServer() {
-        Timber.d("get data")
+        Timber.d("getDataFromServer()")
         actualPairedDataDisposables += firebasePairingWifi.connect()
                 .andThen(getDeviceUUid())
                 .doOnSuccess { App.THIS_DEVICE_UUID = it }
@@ -245,6 +255,9 @@ class CentralFragmentPresenter(private val appContext: Context,
             Timber.d("not paired")
             viewState = NOT_PAIRED
         }
+        listOfPairedDevices.forEachWithIndex { index, device ->
+            Timber.d("$index = ${device.deviceName}")
+        }
         updateUI()
 
         // TODO удалить комнату из базы если там одно устройство или нашу ссылку на комнату если нашего устройства нет в списке
@@ -255,14 +268,11 @@ class CentralFragmentPresenter(private val appContext: Context,
         when (viewState) {
             UNDEFINED_STATE -> this@CentralFragmentPresenter.getDataFromServer()
             NOT_PAIRED -> setNotPairedState()
-            PAIRING -> {
-                setPairingState()
-                Timber.d("setsetPairingState")
-            }
+            PAIRING -> setPairingState()
             CONFIRMATION -> pairingCandidate?.let { setConfirmationState(it) }
             PAIRED -> setPairedState(role, listOfOtherDevicePaired, childName)
         }
-        updateDevicesRecycler(listOfOtherDevicePaired) // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
+        // updateDevicesRecycler(listOfOtherDevicePaired) // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
 
     }
 
@@ -329,7 +339,7 @@ class CentralFragmentPresenter(private val appContext: Context,
                 .andThen(firebasePairingWifi.removeThisDeviceFromRoomReference())
                 .doOnComplete { Timber.d("removeThisDeviceFromRoomReference()") }
                 .compose(RxUtils.applyCompletableIoSchedulers())
-                .subscribeBy (
+                .subscribeBy(
                         onComplete = {
                             listOfPairedDevices.clear()
                             viewState = NOT_PAIRED

@@ -142,6 +142,7 @@ class VideoFragmentPresenter @Inject constructor(
             }
             is ChildEventRemoved<DataSnapshot> ->
                 if (pairingCandidate == device) {
+                    Timber.d("ChildEventRemoved<DataSnapshot>")
                     stopPairing()
                     getView()?.showMessageDeviceStoppedPairing(device.name)
                     // TODO вернуть UI в исходное состояние
@@ -153,7 +154,10 @@ class VideoFragmentPresenter @Inject constructor(
     fun confirmPairingAndWaitForOther(pairingCandidate: PairingDevice) {
         pairedDisposable = firebasePairingWifi.saveThisDeviceInPaired(pairingCandidate)
                 .andThen(firebasePairingWifi.listenForPairingCandidateConfirmed(pairingCandidate)) //  в andThen() круглые скобки!!!
-                .doOnComplete { pairingDisposables.clear() }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
+                .doOnComplete {
+                    pairingDisposables.clear()
+                    Timber.d(" pairingDisposables.clear()")
+                }  // если не уничтожить pairing потоки, будет ошибочная остановка сопряжения когда Кандидат удалит себя из pairing_devices
                 .andThen(firebasePairingWifi.saveRoomReference(pairingCandidate))
                 .andThen(firebasePairingWifi.removeThisDeviceFromPairing())
                 .compose(RxUtils.applyCompletableIoSchedulers())

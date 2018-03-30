@@ -144,23 +144,23 @@ class CentralFragment :
     //<editor-fold desc="Dialogs">
 
     override fun showPairingConfirmationDialog(device: PairingDevice) {
-        pairingConfirmationDialog?.cancel() // TODO заменить на очередь устойств на сопряжение
+        pairingConfirmationDialog?.dismiss() // TODO заменить на очередь устойств на сопряжение
         pairingConfirmationDialog = alert("Pair with ${device.name}?") {
             //TODO из res.strings
             yesButton { getPresenter().confirmPairingAndWaitForOther(device) }
             noButton {
                 it.cancel()
-                // getPresenter().stopPairing()
             }
             onCancelled {
+                Timber.d("showPairingConfirmationDialog onCancel")
                 it.dismiss()
-                getPresenter().stopPairing()
+                getPresenter().onPairingConfirmationCancel()
             }
         }.show()
     }
 
-    override fun closePairingConfirmationDialog() {
-        pairingConfirmationDialog?.cancel()
+    override fun closePairingConfirmationDialog() { // TODO not used
+        pairingConfirmationDialog?.dismiss()
     }
 
     override fun showSetChildNameDialog(currentChildName: String?) {
@@ -233,7 +233,7 @@ class CentralFragment :
 
     override fun setNotPairedState() {
         pairingProgeressDialog?.dismiss()  // TODO ??
-        pairingConfirmationDialog?.cancel()
+        pairingConfirmationDialog?.dismiss()
         btnPair.visibility = View.VISIBLE //TODO move to center
         btnChildRole.visibility = View.GONE
         btnParentRole.visibility = View.GONE
@@ -258,7 +258,7 @@ class CentralFragment :
 
     override fun setPairedState(role: Role, pairedDevices: List<PairedDevice>, childName: String) {
         pairingProgeressDialog?.dismiss()
-        pairingConfirmationDialog?.cancel()
+        pairingConfirmationDialog?.dismiss()
         btnPair.visibility = View.GONE  // TODO семестить вниз
         btnPairMore.visibility = View.VISIBLE
         btnChildRole.visibility = View.VISIBLE

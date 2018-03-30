@@ -48,12 +48,15 @@ class App : Application() {
     // lateinit var roomUUID: String
 
 
-    val CURRENT_WIFI_BSSID: String?
-        get() {
-            val wifiManager = applicationContext
-                    .getSystemService(Context.WIFI_SERVICE) as WifiManager
-            return wifiManager.connectionInfo.bssid
-        }
+//    val CURRENT_WIFI_BSSID: String?
+//        get() {
+//            val wifiManager = applicationContext
+//                    .getSystemService(Context.WIFI_SERVICE) as WifiManager
+//            return wifiManager.connectionInfo.bssid
+//        }
+
+    val CURRENT_WIFI_BSSID: String? = "TEST_WIFI_NAME"
+
 
     var thisDeviceUuid:String? = null
 
