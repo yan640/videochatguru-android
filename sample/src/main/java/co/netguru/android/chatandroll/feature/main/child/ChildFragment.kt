@@ -13,9 +13,7 @@ import android.support.annotation.StringRes
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
-import android.view.Gravity
 import android.view.View
-import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.app.App
@@ -23,12 +21,12 @@ import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.model.Child
-import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
+import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
-import kotlinx.android.synthetic.main.fragment_video.*
+import kotlinx.android.synthetic.main.fragment_child.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
@@ -116,8 +114,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     //<editor-fold desc="Fragment Lifecycle">
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (buttonPanel.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
-        (localVideoView.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
+        (buttonPanelChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
+        (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
         getPresenter().onViewCreated()
@@ -130,28 +128,26 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 //            //getPresenter().connect()
 //            getPresenter().startChildVideo()
 //        }
-        pairButton.setOnClickListener {
-            getPresenter().pairButtonClicked()
-        }
 
-        disconnectButton.setOnClickListener {
+
+        disconnectButtonChild.setOnClickListener {
 
             getPresenter().disconnectByUser()
             getActivity().finish()
         }
 
-        switchCameraButton.setOnClickListener {
+        switchCameraButtonChild.setOnClickListener {
             service?.switchCamera()
         }
 
-        cameraEnabledToggle.setOnCheckedChangeListener { _, enabled ->
+        cameraEnabledToggleChild.setOnCheckedChangeListener { _, enabled ->
             service?.enableCamera(enabled)
         }
 
-        microphoneEnabledToggle.setOnCheckedChangeListener { _, enabled ->
+        microphoneEnabledToggleChild.setOnCheckedChangeListener { _, enabled ->
             service?.enableMicrophone(enabled)
         }
-        devicesRecycler.layoutManager = LinearLayoutManager(activity.ctx)
+        childRecycler.layoutManager = LinearLayoutManager(activity.ctx)
 //        parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
 //        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         //childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
@@ -184,7 +180,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        if (remoteVideoView.visibility == View.VISIBLE) {
+        if (remoteVideoViewChild.visibility == View.VISIBLE) {
             outState.putBoolean(KEY_IN_CHAT, true)
         }
     }
@@ -244,33 +240,6 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     }
 
-//    override fun showChooseRoleDialog() {
-//        if (chooseRoleDialog?.isShowing != true) {
-//            chooseRoleDialog = alert("you can easly change your role any time at the bottom buttons") {
-//                title = "Parent or child?"
-//                customView {
-//                    linearLayout {
-//                        gravity = Gravity.CENTER_HORIZONTAL
-//                        button("Child") {
-//                            padding = dip(16)
-//                            setOnClickListener {
-//                                getPresenter().childRoleButtonClicked()
-//                                chooseRoleDialog?.cancel()
-//                            }
-//                        }
-//                        button("Parent") {
-//                            padding = dip(16)
-//                            setOnClickListener {
-//                                getPresenter().parentRoleButtonClicked()
-//                                chooseRoleDialog?.cancel()
-//                            }
-//                        }
-//                    }
-//                }
-//            }.show()
-//        }
-//    }
-
     override fun showPairingProgressDialog() {
         pairingProgeressDialog = indeterminateProgressDialog(
                 "Looking for pairing device...")
@@ -284,53 +253,15 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     override fun closePairingProgessDialog() {
         pairingProgeressDialog?.dismiss()
     }
-    //</editor-fold>
 
 
 
-    //<editor-fold desc="Buttons">
-
-    override fun hideConnectButtonWithAnimation() {
-        connectButton.animate().scaleX(0f).scaleY(0f)
-                .setInterpolator(OvershootInterpolator())
-                .setDuration(CONNECT_BUTTON_ANIMATION_DURATION_MS)
-                .withStartAction { connectButton.isClickable = false }
-                .withEndAction {
-                    connectButton.isClickable = true
-                    connectButton.visibility = View.GONE
-                    connectButton.scaleX = 1f
-                    connectButton.scaleY = 1f
-                }
-                .start()
-    }
 
 
-    override fun setParentButtonChecked(isChecked: Boolean) {
-        if (isChecked)
-            parenRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-        else
-            parenRoleButton.backgroundColor = resources.getColor(R.color.primary)
-    }
 
-    override fun setChildButtonChecked(isChecked: Boolean) {
-        if (isChecked)
-            childRoleButton.backgroundColor = resources.getColor(R.color.material_deep_teal_500)
-        else
-            childRoleButton.backgroundColor = resources.getColor(R.color.primary)
-    }
 
-    override fun setPairButtonText(text: String) {
-        pairButton.text = text
-    }
 
-    override fun hideChildName() {
-        childNameButton.visibility = View.GONE
-    }
 
-    override fun showChildName(childName: String) {
-        childNameButton.text = childName
-        childNameButton.visibility = View.VISIBLE
-    }
 
     override fun showSnackbarFromString(message: String) {
         showSnackbarMessage(message, Snackbar.LENGTH_LONG)
@@ -340,37 +271,28 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         showSnackbarMessage(stringRes, Snackbar.LENGTH_LONG)
     }
 
-    override fun showParentChildButtons() {
-        childRoleButton.visibility = View.VISIBLE
-        parenRoleButton.visibility = View.VISIBLE
-    }
 
-    override fun hideParentChildButtons() {
-        childRoleButton.visibility = View.GONE
-        parenRoleButton.visibility = View.GONE
-    }
 
 
     override fun showCamViews() {
-        buttonPanel.visibility = View.VISIBLE
-        remoteVideoView.visibility = View.GONE
-        localVideoView.visibility = View.VISIBLE
-        connectButton.visibility = View.GONE
-        pairButton.visibility = View.GONE
+        buttonPanelChild.visibility = View.VISIBLE
+        remoteVideoViewChild.visibility = View.GONE
+        localVideoViewChild.visibility = View.VISIBLE
+
     }
 
 
     override fun showStartRouletteView() {
-        buttonPanel.visibility = View.GONE
-        remoteVideoView.visibility = View.GONE
-        localVideoView.visibility = View.GONE
-        connectButton.visibility = View.VISIBLE
-        pairButton.visibility = View.VISIBLE
+        buttonPanelChild.visibility = View.GONE
+        remoteVideoViewChild.visibility = View.GONE
+        localVideoViewChild.visibility = View.GONE
+
+
     }
 
     private fun syncButtonsState(service: WebRtcService) {
-        cameraEnabledToggle.isChecked = service.isCameraEnabled()
-        microphoneEnabledToggle.isChecked = service.isMicrophoneEnabled()
+        cameraEnabledToggleChild.isChecked = service.isCameraEnabled()
+        microphoneEnabledToggleChild.isChecked = service.isMicrophoneEnabled()
     }
 
     //</editor-fold>
@@ -459,8 +381,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     private fun onWebRtcServiceConnected(service: WebRtcService) {
         Timber.d("Service connected")
         this.service = service
-        service.attachLocalView(localVideoView)
-        service.attachRemoteView(remoteVideoView)
+        service.attachLocalView(localVideoViewChild)
+        service.attachRemoteView(remoteVideoViewChild)
         syncButtonsState(service)
         service.attachServiceActionsListener(webRtcServiceListener = this)
     }
@@ -524,9 +446,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
     //<editor-fold desc="Recycler">
-    override fun updateDevicesRecycler(devices: List<Child>) {
-//        val adapter = PairedDevicesAdapter(devices, { showSnackbarFromString("Clicked ${it.deviceName}") })
-//        devicesRecycler.adapter = adapter
+    override fun updateChildRecycler(childrens: List<Child>) {
+       val adapter = ChildAdapter(childrens, { showSnackbarFromString("Clicked ${it.childName}") })
+        childRecycler.adapter = adapter
     }
     //</editor-fold>
 }

@@ -12,7 +12,6 @@ import co.netguru.android.chatandroll.data.firebase.*
 import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
-import co.netguru.android.chatandroll.data.model.Role
 import co.netguru.android.chatandroll.feature.base.BasePresenter
 import com.google.firebase.database.DataSnapshot
 import io.reactivex.Completable
@@ -259,7 +258,6 @@ class ChildFragmentPresenter @Inject constructor(
                 )
     }
 
-    private fun updateListOfChildes(childEvent: ChildEvent<DataSnapshot>) {}
 
 
     private fun getDeviceUUid(): Single<String> {
@@ -301,6 +299,7 @@ class ChildFragmentPresenter @Inject constructor(
             }
             else
             {
+
                 // TODO Показать рекуклер вью с детьми и ждать выбора
             }
 
@@ -315,6 +314,28 @@ class ChildFragmentPresenter @Inject constructor(
 
         listOfChildrens.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.childName}") }
     }
+
+
+
+
+
+    private fun saveChildrenSetting(child: Child) {
+        onDestroyDestroedDisposables +=  firebaseChild.saveChildrenSetting(child)
+
+                .compose(RxUtils.applyCompletableIoSchedulers())
+                .subscribeBy(
+
+                        onError = {
+                            Timber.d(it.fillInStackTrace())
+                        },
+                        onComplete = {
+
+                        }
+
+                )
+    }
+
+
 
     private fun setChildOnline(child: Child) {
         onDestroyDestroedDisposables +=  firebaseChild.setChildOnline(child)
@@ -334,7 +355,7 @@ class ChildFragmentPresenter @Inject constructor(
 
 
     private fun updateUI() = getView()?.run {
-        updateDevicesRecycler(listOfChildrens)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
+        updateChildRecycler(listOfChildrens)  // TODO при большом кол-ве сопряженных устойст много раз переррсовывает recycler при их загрузке из базы, не удаляет эл-ты при полном удалении базы
 //        showParentChildButtons()
 //        setPairButtonText("Unpair")
 //        currentDevicePaired?.let {

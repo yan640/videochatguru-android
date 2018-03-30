@@ -1,7 +1,6 @@
 package co.netguru.android.chatandroll.feature.main.video
 
 import co.netguru.android.chatandroll.data.model.Child
-import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.MvpView
 
@@ -24,20 +23,12 @@ interface ChildFragmentView : MvpView {
     fun showOtherPartyFinished()
     fun showConnectedMsg()
     fun showWillTryToRestartMsg()
-    fun hideConnectButtonWithAnimation()
     fun showPairingProgressDialog()
     fun closePairingProgessDialog()
     fun showSetChildNameDialog(currentChildName: String? = null)
-    fun showParentChildButtons()
-    fun showSnackbarFromString(message:String)
+    fun showSnackbarFromString(message: String)
     fun showSnackbarFromRes(stringRes: Int)
-    fun showMessageDeviceStoppedPairing(deviceName:String)
-    fun updateDevicesRecycler(devices: List<Child>)
-    fun setParentButtonChecked(isChecked:Boolean)
-    fun setChildButtonChecked(isChecked:Boolean)
-    fun hideParentChildButtons()
-    fun hideChildName()
-    fun showChildName(childName:String)
-    //fun showChooseRoleDialog()
-    fun setPairButtonText(text:String)
+    fun showMessageDeviceStoppedPairing(deviceName: String)
+    fun updateChildRecycler(childrens: List<Child>)
+
 }

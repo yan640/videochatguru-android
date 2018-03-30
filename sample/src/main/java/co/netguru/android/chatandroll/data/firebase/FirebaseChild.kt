@@ -1,21 +1,20 @@
 package co.netguru.android.chatandroll.data.firebase
 
 import android.content.Context
-import co.netguru.android.chatandroll.R.string.child
 import co.netguru.android.chatandroll.app.App
-import co.netguru.android.chatandroll.common.extension.*
+import co.netguru.android.chatandroll.common.extension.ChildEvent
+import co.netguru.android.chatandroll.common.extension.ChildEventAdded
+import co.netguru.android.chatandroll.common.extension.rxChildEvents
+import co.netguru.android.chatandroll.common.extension.rxSingleValue
 import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
-import co.netguru.android.chatandroll.feature.main.ChildActivity
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import io.reactivex.Completable
 import io.reactivex.Flowable
-import io.reactivex.Maybe
 import io.reactivex.Single
-import io.reactivex.internal.util.NotificationLite.getValue
 import io.reactivex.rxkotlin.ofType
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -96,9 +95,6 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
                 .setValue(Child(
                         key = childKey,
                         childName = childName ,
-//                        phoneUuid = App.THIS_DEVICE_UUID,
-//                        phoneModel = App.THIS_DEVICE_MODEL,
-//                        online = true,
                         useFrontCamera  = false,
                         useFlashLight = false))
                 .addOnCompleteListener { emitter.onComplete() }
@@ -107,10 +103,20 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 
 
 
+    fun saveChildrenSetting(child: Child ): Completable = Completable.create { emitter ->
+        childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+                .child(App.CURRENT_ROOM_ID)
+                .child(CHILD)
+                .child(child.key)
+        childReference
+                .setValue(child)
+                .addOnCompleteListener { emitter.onComplete() }
+                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
 
+    }
 
     fun setChildOnline(child: Child ): Completable = Completable.create { emitter ->
-          childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
+        childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
                 .child(App.CURRENT_ROOM_ID)
                 .child(CHILD)
                 .child(child.key)

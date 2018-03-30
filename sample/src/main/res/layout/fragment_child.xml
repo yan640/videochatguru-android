@@ -19,31 +19,31 @@
         />
 
     <org.webrtc.SurfaceViewRenderer
-        android:id="@+id/localVideoView"
+        android:id="@+id/localVideoViewChild"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:visibility="gone"         />
 
     <org.webrtc.SurfaceViewRenderer
-        android:id="@+id/remoteVideoView"
+        android:id="@+id/remoteVideoViewChild"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"/>
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/devicesRecycler"
+        android:id="@+id/childRecycler"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_gravity="top"
         android:layout_marginTop="100dp"
-        android:visibility="gone">
+        android:visibility="visible">
     </android.support.v7.widget.RecyclerView>
 
     <ImageButton
-        android:id="@+id/switchCameraButton"
+        android:id="@+id/switchCameraButtonChild"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackground"
+
         android:contentDescription="@string/desc_switch_camera"
         android:padding="@dimen/margin_medium"
         app:srcCompat="@drawable/ic_switch_video_white_24dp"/>
@@ -70,35 +70,7 @@
         android:visibility="gone" />
 
 
-    <LinearLayout
-        style="?android:attr/buttonBarButtonStyle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:visibility="invisible">
 
-        <Button
-            android:id="@+id/parenRoleButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="20dp"
-            android:background="@drawable/rounded_button"
-            android:text="@string/parent"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/childRoleButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:background="@drawable/rounded_button"
-            android:text="@string/child"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            android:visibility="gone" />
-    </LinearLayout>
 
 
     <ProgressBar
@@ -111,7 +83,7 @@
         android:visibility="gone"/>
 
     <LinearLayout
-        android:id="@+id/buttonPanel"
+        android:id="@+id/buttonPanelChild"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center|bottom"
@@ -120,7 +92,7 @@
         android:visibility="gone">
 
         <ToggleButton
-            android:id="@+id/microphoneEnabledToggle"
+            android:id="@+id/microphoneEnabledToggleChild"
             style="@style/ToggleButtonBorderlessTextless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -131,16 +103,16 @@
             android:minWidth="@dimen/toggle_button_min_size"/>
 
         <ImageButton
-            android:id="@+id/disconnectButton"
+            android:id="@+id/disconnectButtonChild"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/margin_small"
-            android:background="?selectableItemBackgroundBorderless"
+
             android:contentDescription="@string/desc_hangup"
             android:src="@drawable/call_end_button"/>
 
         <ToggleButton
-            android:id="@+id/cameraEnabledToggle"
+            android:id="@+id/cameraEnabledToggleChild"
             style="@style/ToggleButtonBorderlessTextless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
