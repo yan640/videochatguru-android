@@ -55,13 +55,13 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                 Manifest.permission.ACCESS_WIFI_STATE,
                 Manifest.permission.BLUETOOTH,
                 Manifest.permission.GET_ACCOUNTS)
-        private const val CONNECT_BUTTON_ANIMATION_DURATION_MS = 500L
+
     }
 
     private lateinit var serviceConnection: ServiceConnection
 
     private var pairingConfirmationDialog: AlertDialog? = null
-    private var chooseRoleDialog: AlertDialog? = null
+
     private var pairingProgeressDialog: AlertDialog? = null
     override fun getLayoutId() = R.layout.fragment_child
 
@@ -71,7 +71,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     override val remoteUuid
         get() = service?.getRemoteUuid()  // TODO проверить где используется
 
-    override lateinit var adapter: PairedDevicesAdapter
+    override lateinit var adapter: ChildAdapter
 
     override fun retrievePresenter() = App
             .getApplicationComponent(context)
@@ -148,7 +148,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
             service?.enableMicrophone(enabled)
         }
         childRecycler.layoutManager = LinearLayoutManager(activity.ctx)
-//        parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
+
+        //        parenRoleButton.setOnClickListener { getPresenter().parentRoleButtonClicked() }
 //        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         //childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
     }
@@ -253,14 +254,6 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     override fun closePairingProgessDialog() {
         pairingProgeressDialog?.dismiss()
     }
-
-
-
-
-
-
-
-
 
 
     override fun showSnackbarFromString(message: String) {
@@ -440,6 +433,11 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         }
     }
 
+    private fun usePickedChild(child: Child) {
+        childRecycler.visibility= View.GONE
+        getPresenter().setChildOnline(child.key)
+    }
+
 
     //</editor-fold>
 
@@ -447,7 +445,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     //<editor-fold desc="Recycler">
     override fun updateChildRecycler(childrens: List<Child>) {
-       val adapter = ChildAdapter(childrens, { showSnackbarFromString("Clicked ${it.childName}") })
+       val adapter = ChildAdapter(childrens, { usePickedChild(it) })
         childRecycler.adapter = adapter
     }
     //</editor-fold>

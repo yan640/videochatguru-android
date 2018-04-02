@@ -3,10 +3,11 @@ package co.netguru.android.chatandroll.feature.main.video
 import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.MvpView
+import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
 
 interface ChildFragmentView : MvpView {
     val remoteUuid: String?
-    val adapter: PairedDevicesAdapter
+    val adapter: ChildAdapter
     fun connectTo(uuid: String)
     fun showCamViews()
     fun showPairingConfirmationDialog(device: PairingDevice)

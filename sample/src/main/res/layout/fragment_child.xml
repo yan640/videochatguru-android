@@ -43,7 +43,7 @@
         android:id="@+id/switchCameraButtonChild"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-
+        android:visibility="gone"
         android:contentDescription="@string/desc_switch_camera"
         android:padding="@dimen/margin_medium"
         app:srcCompat="@drawable/ic_switch_video_white_24dp"/>
@@ -107,7 +107,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/margin_small"
-
+            android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="@string/desc_hangup"
             android:src="@drawable/call_end_button"/>
 

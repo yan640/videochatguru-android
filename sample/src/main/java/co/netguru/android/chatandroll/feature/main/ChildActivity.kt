@@ -5,7 +5,6 @@ import android.view.WindowManager
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.feature.base.BaseActivity
 import co.netguru.android.chatandroll.feature.main.video.ChildFragment
-import co.netguru.android.chatandroll.feature.main.video.VideoFragment
 
 /**
  * Created by yan-c_000 on 22.03.2018.
@@ -23,6 +22,13 @@ class ChildActivity : BaseActivity() {
             getReplaceFragmentTransaction(R.id.fragmentContainer, childFragment, ChildFragment.TAG).commit()
         }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+    }
+
+
+
+    override fun onBackPressed() {
+        super.onBackPressed()
 
     }
 
