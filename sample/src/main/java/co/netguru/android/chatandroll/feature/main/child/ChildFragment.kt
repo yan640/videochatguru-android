@@ -133,7 +133,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         disconnectButtonChild.setOnClickListener {
 
             getPresenter().disconnectByUser()
-            getActivity().finish()
+            //getActivity().finish()
+            activity.finish()
         }
 
         switchCameraButtonChild.setOnClickListener {

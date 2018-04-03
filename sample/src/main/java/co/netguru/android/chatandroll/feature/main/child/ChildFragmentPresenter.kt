@@ -207,7 +207,10 @@ class ChildFragmentPresenter @Inject constructor(
                                 getDataFromServer()
                                 childrensSize = it.childrenCount.toInt()
                             } else getView()?.showSetChildNameDialog()
-                            checkChildFolderDisposable.dispose()
+                            if (checkChildFolderDisposable.isDisposed)
+                            {checkChildFolderDisposable.dispose()}
+                            else
+                            {checkChildFolderDisposable.dispose()}
                             //  updateLocalListOfChildes(it)
                         },
                         onError = {
