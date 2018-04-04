@@ -6,6 +6,7 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Single
+import timber.log.Timber
 
 interface ChildEvent<out T> {
     val data: T
@@ -86,7 +87,9 @@ fun <T> DatabaseReference.rxChildEvents(genericTypeIndicator: GenericTypeIndicat
 fun DatabaseReference.rxSingleValue(): Single<DataSnapshot> = Single.create {
     val listener = object : ValueEventListener {
         override fun onCancelled(databaseError: DatabaseError) {
+            Timber.d(databaseError.toString())
             it.onError(databaseError.toException())
+
         }
 
         override fun onDataChange(dataSnapshot: DataSnapshot) {

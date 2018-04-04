@@ -2,7 +2,6 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ServiceConnection
@@ -14,14 +13,11 @@ import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
-import android.widget.Toast
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
-import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.model.Child
-import co.netguru.android.chatandroll.data.model.PairingDevice
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
@@ -29,7 +25,6 @@ import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_child.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
-import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.jetbrains.anko.support.v4.toast
 import org.webrtc.PeerConnection
 import timber.log.Timber
@@ -60,9 +55,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     private lateinit var serviceConnection: ServiceConnection
 
-    private var pairingConfirmationDialog: AlertDialog? = null
 
-    private var pairingProgeressDialog: AlertDialog? = null
     override fun getLayoutId() = R.layout.fragment_child
 
 
@@ -79,16 +72,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
             .childFragmentPresenter()
 
 
-    override fun saveFirebaseDeviceKey(key: String) {
-        SharedPreferences.saveToken(context, key)
-        App.THIS_DEVICE_UUID = key
-        Toast.makeText(context, "key: $key", Toast.LENGTH_LONG).show()
-    }
 
-
-    override fun showFirebaiseKey(key: String) {
-        Toast.makeText(context, "my room key: $key", Toast.LENGTH_LONG).show()
-    }
 
     private fun checkPermissionsAndConnect() {
         if (context.areAllPermissionsGranted(*NECESSARY_PERMISSIONS)) {
@@ -132,9 +116,11 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
         disconnectButtonChild.setOnClickListener {
 
-            getPresenter().disconnectByUser()
-            //getActivity().finish()
-            activity.finish()
+            //getPresenter().disconnectByUser()
+            //          getActivity().finish()
+           activity.finish()
+//            onDestroy()
+
         }
 
         switchCameraButtonChild.setOnClickListener {
@@ -164,6 +150,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     override fun onStop() {
         super.onStop()
+        getPresenter().disconnectChild()
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
@@ -175,8 +162,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
             it.detachViews()
             unbindService()
         }
-        pairingProgeressDialog?.cancel()
-        pairingConfirmationDialog?.cancel()
+
+
         getPresenter().onDestroyView()
     }
 
@@ -199,25 +186,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
     //<editor-fold desc="Dialogs">
-    override fun showPairingConfirmationDialog(device: PairingDevice) {
-        pairingConfirmationDialog?.cancel() // TODO заменить на очередь устойств на сопряжение
-        pairingConfirmationDialog = alert("Pair with ${device.name}?") {
-            //TODO из res.strings
-            yesButton { getPresenter().confirmPairingAndWaitForOther(device) }
-            noButton {
-                it.cancel()
-                // getPresenter().stopPairing()
-            }
-            onCancelled {
-                it.dismiss()
-                getPresenter().stopPairing()
-            }
-        }.show()
-    }
 
-    override fun closePairingConfirmationDialog() {
-        pairingConfirmationDialog?.cancel()
-    }
+
+
 
     override fun showSetChildNameDialog(currentChildName: String?) {
         alert("Write the name of child") {
@@ -242,19 +213,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     }
 
-    override fun showPairingProgressDialog() {
-        pairingProgeressDialog = indeterminateProgressDialog(
-                "Looking for pairing device...")
-        pairingProgeressDialog?.setOnCancelListener {
-            it.dismiss()
-            getPresenter().stopPairing()
-        }
-        pairingProgeressDialog?.show()
-    }
 
-    override fun closePairingProgessDialog() {
-        pairingProgeressDialog?.dismiss()
-    }
 
 
     override fun showSnackbarFromString(message: String) {
@@ -445,8 +404,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
     //<editor-fold desc="Recycler">
-    override fun updateChildRecycler(childrens: List<Child>) {
-       val adapter = ChildAdapter(childrens, { usePickedChild(it) })
+    override fun updateChildRecycler(children: List<Child>) {
+       val adapter = ChildAdapter(children, { usePickedChild(it) })
         childRecycler.adapter = adapter
     }
     //</editor-fold>

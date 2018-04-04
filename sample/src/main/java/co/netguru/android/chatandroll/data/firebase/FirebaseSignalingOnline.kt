@@ -19,7 +19,9 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
 
     private fun deviceOnlinePath(deviceUuid: String) ="paired_devices/"+App.CURRENT_ROOM_ID +"/"+ ONLINE_DEVICES_PATH+deviceUuid
 
-    fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {
+
+    // Obsolete, т.к. не используем Disconnect
+    fun setOnlineAndRetrieveRandomDevice1(): Maybe<String> = Completable.create {
         val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.THIS_DEVICE_UUID))
         with(firebaseOnlineReference) {
             onDisconnect().removeValue()
@@ -27,6 +29,20 @@ class FirebaseSignalingOnline @Inject constructor(private val firebaseDatabase: 
         }
         it.onComplete()
     }.andThen(chooseRandomDevice())
+
+    fun setOnlineAndRetrieveRandomDevice(): Maybe<String> = Completable.create {emitter ->
+        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.THIS_DEVICE_UUID))
+        firebaseOnlineReference.setValue(RouletteConnectionFirebase())
+                .addOnCompleteListener { emitter.onComplete() }
+    }.andThen(chooseRandomDevice())
+
+    fun disconnectRightWay(): Completable = Completable.create {emitter ->
+        val firebaseOnlineReference = firebaseDatabase.getReference(deviceOnlinePath(App.THIS_DEVICE_UUID))
+        firebaseOnlineReference.removeValue()
+                .addOnCompleteListener { emitter.onComplete() }
+    }
+
+
 
     fun disconnect(): Completable = Completable.fromAction {
         firebaseDatabase.goOffline()
