@@ -2,10 +2,6 @@ package co.netguru.android.chatandroll.webrtc.service
 
 import android.os.Handler
 import android.os.Looper
-import co.netguru.videochatguru.PeerConnectionListener
-import co.netguru.videochatguru.WebRtcAnsweringPartyListener
-import co.netguru.videochatguru.WebRtcClient
-import co.netguru.videochatguru.WebRtcOfferingActionListener
 import co.netguru.android.chatandroll.common.extension.ChildEventAdded
 import co.netguru.android.chatandroll.common.util.RxUtils
 import co.netguru.android.chatandroll.data.firebase.FirebaseIceCandidates
@@ -13,13 +9,14 @@ import co.netguru.android.chatandroll.data.firebase.FirebaseIceServers
 import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingAnswers
 import co.netguru.android.chatandroll.data.firebase.FirebaseSignalingOffers
 import co.netguru.android.chatandroll.feature.base.service.BaseServiceController
+import co.netguru.videochatguru.PeerConnectionListener
+import co.netguru.videochatguru.WebRtcAnsweringPartyListener
+import co.netguru.videochatguru.WebRtcClient
+import co.netguru.videochatguru.WebRtcOfferingActionListener
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.plusAssign
 import io.reactivex.rxkotlin.subscribeBy
-import org.webrtc.IceCandidate
-import org.webrtc.PeerConnection
-import org.webrtc.SessionDescription
-import org.webrtc.SurfaceViewRenderer
+import org.webrtc.*
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -72,7 +69,9 @@ class WebRtcServiceController @Inject constructor(
         webRtcClient.detachViews()
     }
 
-    fun switchCamera() = webRtcClient.switchCamera()
+    fun switchCamera(cameraSwitchHandler: CameraVideoCapturer.CameraSwitchHandler? = null) = webRtcClient.switchCamera(cameraSwitchHandler )
+
+
 
     fun enableCamera(isEnabled: Boolean) {
         webRtcClient.cameraEnabled = isEnabled

@@ -6,17 +6,7 @@
                                                  android:layout_width="match_parent"
                                                  android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/childNameButton"
-        android:layout_margin="20dp"
-        android:background="@color/semi_transparent_white"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_gravity="center_horizontal"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
 
-        />
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/localVideoViewChild"
@@ -48,26 +38,6 @@
         android:padding="@dimen/margin_medium"
         app:srcCompat="@drawable/ic_switch_video_white_24dp"/>
 
-    <Button
-        android:id="@+id/connectButton"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="@dimen/splash_screen_vertical_margin"
-        android:background="@drawable/rounded_button"
-        android:text="@string/action_start"
-        android:visibility="gone"/>
-
-    <Button
-        android:id="@+id/pairButton"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="-100dp"
-        android:layout_marginTop="@dimen/splash_screen_vertical_margin"
-        android:background="@drawable/rounded_button"
-        android:text="@string/action_pair"
-        android:visibility="gone" />
 
 
 
@@ -92,13 +62,13 @@
         android:visibility="gone">
 
         <ToggleButton
-            android:id="@+id/microphoneEnabledToggleChild"
+            android:id="@+id/cameraSwitchToggleChild"
             style="@style/ToggleButtonBorderlessTextless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/margin_small"
-            android:button="@drawable/ic_microphone_toggle"
-            android:contentDescription="@string/desc_toggle_microphone"
+            android:button="@drawable/switch_camera"
+            android:contentDescription="@string/desc_toggle_cameraSwitch"
             android:minHeight="@dimen/toggle_button_min_size"
             android:minWidth="@dimen/toggle_button_min_size"/>
 
@@ -112,13 +82,13 @@
             android:src="@drawable/call_end_button"/>
 
         <ToggleButton
-            android:id="@+id/cameraEnabledToggleChild"
+            android:id="@+id/flashEnabledToggleChild"
             style="@style/ToggleButtonBorderlessTextless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/margin_small"
             android:button="@drawable/ic_flashlight_on_off_toggle"
-            android:contentDescription="@string/desc_toggle_camera"
+            android:contentDescription="@string/desc_flashlight"
             android:minHeight="@dimen/toggle_button_min_size"
             android:minWidth="@dimen/toggle_button_min_size"/>
     </LinearLayout>

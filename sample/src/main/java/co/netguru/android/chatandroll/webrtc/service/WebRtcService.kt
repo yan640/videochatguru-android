@@ -12,6 +12,7 @@ import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.getColorCompat
 import co.netguru.android.chatandroll.feature.base.service.BaseServiceWithFacade
 import co.netguru.android.chatandroll.feature.main.MainActivity
+import org.webrtc.CameraVideoCapturer
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
 import javax.inject.Inject
@@ -83,7 +84,7 @@ class WebRtcService : BaseServiceWithFacade<WebRtcServiceFacade, WebRtcServiceCo
 
     fun getRemoteUuid() = webRtcServiceController.remoteUuid
 
-    fun switchCamera() = webRtcServiceController.switchCamera()
+    fun switchCamera(cameraSwitchHandler: CameraVideoCapturer.CameraSwitchHandler? = null) = webRtcServiceController.switchCamera()
 
     fun enableCamera(isEnabled: Boolean) {
         webRtcServiceController.enableCamera(isEnabled)

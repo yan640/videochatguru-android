@@ -27,12 +27,5 @@ class ChildActivity : BaseActivity() {
 
 
 
-    override fun onBackPressed() {
-        super.onBackPressed()
-
-    }
-
-
-
 
 }

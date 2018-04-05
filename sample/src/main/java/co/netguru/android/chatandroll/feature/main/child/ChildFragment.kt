@@ -26,6 +26,7 @@ import kotlinx.android.synthetic.main.fragment_child.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.support.v4.toast
+import org.webrtc.CameraVideoCapturer
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
@@ -36,7 +37,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = ChildFragment::class.java.name
         fun newInstance() = ChildFragment()
-
+        private var isOn = false
+        //private var camera: Camera2? = null
 
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
@@ -124,15 +126,17 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         }
 
         switchCameraButtonChild.setOnClickListener {
-            service?.switchCamera()
+
+            switchCamera()
+            //.doAsyncResult {  }
         }
 
-        cameraEnabledToggleChild.setOnCheckedChangeListener { _, enabled ->
-            service?.enableCamera(enabled)
+        flashEnabledToggleChild.setOnCheckedChangeListener { _, enabled ->
+           // service?.enableCamera(enabled)
         }
 
-        microphoneEnabledToggleChild.setOnCheckedChangeListener { _, enabled ->
-            service?.enableMicrophone(enabled)
+        cameraSwitchToggleChild.setOnCheckedChangeListener { _, enabled ->
+            switchCamera()
         }
         childRecycler.layoutManager = LinearLayoutManager(activity.ctx)
 
@@ -140,6 +144,28 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 //        childRoleButton.setOnClickListener { getPresenter().childRoleButtonClicked() }
         //childNameButton.setOnClickListener { getPresenter().childNameButtonClicked() }
     }
+
+
+    fun switchCamera(){
+          val cameraSwitchHandler = object : CameraVideoCapturer.CameraSwitchHandler {
+
+              override fun onCameraSwitchDone(isFront: Boolean) {
+
+                  getPresenter().changeCameraToOpposite(isFront)
+                  Timber.d("WebRtcServiceController", "camera switched to Front: $isFront")
+              }
+
+              override fun onCameraSwitchError(msg: String?) {
+                  Timber.d("WebRtcServiceController", "failed to switch camera " + msg)
+              }
+          }
+        service?.switchCamera(cameraSwitchHandler)
+
+
+    }
+
+
+
 
     override fun onStart() {
         super.onStart()
@@ -243,10 +269,10 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     }
 
-    private fun syncButtonsState(service: WebRtcService) {
-        cameraEnabledToggleChild.isChecked = service.isCameraEnabled()
-        microphoneEnabledToggleChild.isChecked = service.isMicrophoneEnabled()
-    }
+//    private fun syncButtonsState(service: WebRtcService) {
+//        cameraEnabledToggleChild.isChecked = service.isCameraEnabled()
+//        microphoneEnabledToggleChild.isChecked = service.isMicrophoneEnabled()
+//    }
 
     //</editor-fold>
 
@@ -269,21 +295,6 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     }
 
 
-    override fun attachServiceWifi() {
-        TODO("attachServiceWifi not impemented, I think it's useless")
-        // getPresenter().startWifiPairing()
-//        serviceConnection = object : ServiceConnection {
-//            override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
-//                onWebRtcServiceConnected((iBinder as (WebRtcService.LocalBinder)).service)
-//
-//            }
-//
-//            override fun onServiceDisconnected(componentName: ComponentName) {
-//                onWebRtcServiceDisconnected()
-//            }
-//        }
-//        startAndBindWebRTCService(serviceConnection)
-    }
 
 
     override fun criticalWebRTCServiceException(throwable: Throwable) {
@@ -336,7 +347,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         this.service = service
         service.attachLocalView(localVideoViewChild)
         service.attachRemoteView(remoteVideoViewChild)
-        syncButtonsState(service)
+        //syncButtonsState(service)
         service.attachServiceActionsListener(webRtcServiceListener = this)
     }
 

@@ -103,7 +103,7 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 
 
 
-    fun saveChildrenSetting(child: Child ): Completable = Completable.create { emitter ->
+    fun saveChildSetting(child: Child ): Completable = Completable.create { emitter ->
         childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
                 .child(App.CURRENT_ROOM_ID)
                 .child(CHILD)
@@ -115,20 +115,12 @@ class FirebaseChild @Inject constructor(private val firebaseDatabase: FirebaseDa
 
     }
 
-    fun setChildOnline(child: Child ): Completable = Completable.create { emitter ->
-        childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )
-                .child(App.CURRENT_ROOM_ID)
-                .child(CHILD)
-                .child(child.key)
-        childReference
-                .setValue(child)
-                .addOnCompleteListener { emitter.onComplete() }
-                .addOnFailureListener { emitter.onError(it.fillInStackTrace()) }
+
 //        childReference.child(Child::online.name).onDisconnect().removeValue() // при отключении удаляет статус online, а default value = offline
 //        childReference.child(Child::phoneModel.name).onDisconnect().removeValue() // при отключении удаляет phoneModel, а default value = ""
 //        childReference.child(Child::phoneUuid.name).onDisconnect().removeValue() // при отключении удаляет phoneUuid, а default value = ""
 
-    }
+
 
     fun setChildOffline(child: Child ): Completable = Completable.create { emitter ->
         childReference = firebaseDatabase.getReference(PAIRED_ROOMS_PATH )

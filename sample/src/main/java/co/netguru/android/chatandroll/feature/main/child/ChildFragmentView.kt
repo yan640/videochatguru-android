@@ -12,7 +12,6 @@ interface ChildFragmentView : MvpView {
     fun showStartRouletteView()
     fun disconnect()
     fun attachService()
-    fun attachServiceWifi()
     fun showErrorWhileChoosingForPairing()
     fun showNoOneAvailable()
     fun showLookingForPartnerMessage()

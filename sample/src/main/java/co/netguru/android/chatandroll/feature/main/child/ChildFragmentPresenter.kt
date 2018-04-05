@@ -186,10 +186,16 @@ class ChildFragmentPresenter @Inject constructor(
         listOfChildren.forEachWithIndex { index, el -> Timber.d("element#$index =  ${el.childName}") }
     }
 
+    fun changeCameraToOpposite(isFront: Boolean) {
+        App.get(appContext).FRONT_CAMERA_INITIALIZATION=isFront
+        childPicked?.run {
+            useFrontCamera = App.get(appContext).FRONT_CAMERA_INITIALIZATION
+            saveChildrenSetting(this)
+        }
+    }
 
     private fun saveChildrenSetting(child: Child) {
-        onDestroyDestroedDisposables += firebaseChild.saveChildrenSetting(child)
-
+        onDestroyDestroedDisposables += firebaseChild.saveChildSetting(child)
                 .compose(RxUtils.applyCompletableIoSchedulers())
                 .subscribeBy(
                         onError = {
@@ -207,7 +213,7 @@ class ChildFragmentPresenter @Inject constructor(
             phoneUuid = App.THIS_DEVICE_UUID
             phoneModel = App.THIS_DEVICE_MODEL
             online = true
-            onDestroyDestroedDisposables += firebaseChild.setChildOnline(this)
+            onDestroyDestroedDisposables += firebaseChild.saveChildSetting(this)
 
                     .compose(RxUtils.applyCompletableIoSchedulers())
                     .subscribeBy(
@@ -215,6 +221,8 @@ class ChildFragmentPresenter @Inject constructor(
                                 Timber.d(it.fillInStackTrace())
                             },
                             onComplete = {
+
+                                App.get(appContext).FRONT_CAMERA_INITIALIZATION = this.useFrontCamera
                                 startChildVideo()
                             }
                     )
@@ -251,7 +259,7 @@ class ChildFragmentPresenter @Inject constructor(
                 )
 
 
-        // TODO Создать и сохранить Чайлда
+
 
     }
 
@@ -265,7 +273,7 @@ class ChildFragmentPresenter @Inject constructor(
                         onSuccess = {
                             Timber.d("Next $it")
                             //getView()?.showCamViews()
-                            App.get(appContext).FRONT_CAMERA_INITIALIZATION = false
+
                             App.CURRENT_ROOM_ID = it
                             connect()
 

@@ -7,13 +7,13 @@ import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.support.v7.app.AppCompatDelegate
-import co.netguru.videochatguru.disableWebRtcLogs
-import co.netguru.videochatguru.enableInternalWebRtclogs
-import co.netguru.videochatguru.enableWebRtcLogs
 import co.netguru.android.chatandroll.BuildConfig
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.firebase.FirebaseModule
+import co.netguru.videochatguru.disableWebRtcLogs
+import co.netguru.videochatguru.enableInternalWebRtclogs
+import co.netguru.videochatguru.enableWebRtcLogs
 import com.squareup.leakcanary.LeakCanary
 import org.webrtc.Logging
 import timber.log.Timber
@@ -36,7 +36,7 @@ class App : Application() {
     }
 
    // lateinit var roomUUID: String
-   var FRONT_CAMERA_INITIALIZATION = true;
+   var FRONT_CAMERA_INITIALIZATION = false
 
     val CURRENT_WIFI_BSSID: String?
         get() {
