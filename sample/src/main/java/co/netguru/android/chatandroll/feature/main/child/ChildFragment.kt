@@ -4,12 +4,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
+import android.content.Intent
 import android.content.ServiceConnection
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
 import android.support.annotation.StringRes
-import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
@@ -19,6 +19,7 @@ import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
+import co.netguru.android.chatandroll.feature.main.Services.MonitorService
 import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
@@ -26,7 +27,6 @@ import kotlinx.android.synthetic.main.fragment_child.*
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.support.v4.toast
-import org.webrtc.CameraVideoCapturer
 import org.webrtc.PeerConnection
 import timber.log.Timber
 
@@ -37,8 +37,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     companion object {  // TODO  переделать на const для эффективности
         val TAG: String = ChildFragment::class.java.name
         fun newInstance() = ChildFragment()
-        private var isOn = false
-        //private var camera: Camera2? = null
+
 
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
@@ -100,8 +99,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     //<editor-fold desc="Fragment Lifecycle">
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (buttonPanelChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
-        (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
+        //(buttonPanelChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
+       // (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
         getPresenter().onViewCreated()
@@ -115,6 +114,16 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 //            getPresenter().startChildVideo()
 //        }
 
+        start_monitor.setOnClickListener{
+
+
+            val intent = Intent(context, MonitorService::class.java)
+            intent.putExtra("sensitivity", sensitivity_seekbar.progress )
+
+            if (context != null) {
+                context.startService(intent)
+            }
+        }
 
         disconnectButtonChild.setOnClickListener {
 
@@ -125,18 +134,18 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
         }
 
-        switchCameraButtonChild.setOnClickListener {
-
-            switchCamera()
-            //.doAsyncResult {  }
-        }
+//        switchCameraButtonChild.setOnClickListener {
+//
+//            switchCamera()
+//            //.doAsyncResult {  }
+//        }
 
         flashEnabledToggleChild.setOnCheckedChangeListener { _, enabled ->
            // service?.enableCamera(enabled)
         }
 
         cameraSwitchToggleChild.setOnCheckedChangeListener { _, enabled ->
-            switchCamera()
+            service?.switchCamera(getPresenter().cameraSwitchHandler)
         }
         childRecycler.layoutManager = LinearLayoutManager(activity.ctx)
 
@@ -146,23 +155,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     }
 
 
-    fun switchCamera(){
-          val cameraSwitchHandler = object : CameraVideoCapturer.CameraSwitchHandler {
 
-              override fun onCameraSwitchDone(isFront: Boolean) {
-
-                  getPresenter().changeCameraToOpposite(isFront)
-                  Timber.d("WebRtcServiceController", "camera switched to Front: $isFront")
-              }
-
-              override fun onCameraSwitchError(msg: String?) {
-                  Timber.d("WebRtcServiceController", "failed to switch camera " + msg)
-              }
-          }
-        service?.switchCamera(cameraSwitchHandler)
-
-
-    }
 
 
 
@@ -254,7 +247,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
     override fun showCamViews() {
-        buttonPanelChild.visibility = View.VISIBLE
+     //   buttonPanelChild.visibility = View.VISIBLE
         remoteVideoViewChild.visibility = View.GONE
         localVideoViewChild.visibility = View.VISIBLE
 
@@ -262,7 +255,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
     override fun showStartRouletteView() {
-        buttonPanelChild.visibility = View.GONE
+        //buttonPanelChild.visibility = View.GONE
         remoteVideoViewChild.visibility = View.GONE
         localVideoViewChild.visibility = View.GONE
 

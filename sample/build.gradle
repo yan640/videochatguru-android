@@ -72,6 +72,7 @@ dependencies {
     testCompile(test.mockitoKotlin) {
         exclude group: 'org.jetbrains.kotlin'
     }
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
 }
 //To avoid dependency collisions GMS plugin should be placed at the bottom
 apply plugin: 'com.google.gms.google-services'

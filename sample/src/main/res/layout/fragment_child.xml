@@ -1,95 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                 xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                 xmlns:tools="http://schemas.android.com/tools"
-                                                 android:id="@+id/coordinatorLayout"
-                                                 android:layout_width="match_parent"
-                                                 android:layout_height="match_parent">
-
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                             xmlns:app="http://schemas.android.com/apk/res-auto"
+                                             xmlns:tools="http://schemas.android.com/tools"
+                                             android:id="@+id/coordinatorLayout"
+                                             android:layout_width="match_parent"
+                                             android:layout_height="match_parent">
 
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/localVideoViewChild"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:visibility="gone"         />
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/remoteVideoViewChild"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/childRecycler"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_gravity="top"
-        android:layout_marginTop="100dp"
-        android:visibility="visible">
+        android:layout_width="0dp"
+        android:layout_height="311dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="0dp">
     </android.support.v7.widget.RecyclerView>
 
     <ImageButton
         android:id="@+id/switchCameraButtonChild"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
         android:contentDescription="@string/desc_switch_camera"
         android:padding="@dimen/margin_medium"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_switch_video_white_24dp"/>
 
 
-
-
-
-
-    <ProgressBar
-        android:id="@+id/progressBar"
+    <ToggleButton
+        android:id="@+id/cameraSwitchToggleChild"
+        style="@style/ToggleButtonBorderlessTextless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="-100dp"
-        android:layout_marginTop="@dimen/splash_screen_vertical_margin"
-        android:visibility="gone"/>
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginLeft="84dp"
+        android:layout_marginRight="32dp"
+        android:layout_marginStart="84dp"
+        android:button="@drawable/switch_camera"
+        android:contentDescription="@string/desc_toggle_cameraSwitch"
+        android:minHeight="@dimen/toggle_button_min_size"
+        android:minWidth="@dimen/toggle_button_min_size"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/disconnectButtonChild"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.957"/>
 
-    <LinearLayout
-        android:id="@+id/buttonPanelChild"
-        android:layout_width="match_parent"
+    <ToggleButton
+        android:id="@+id/flashEnabledToggleChild"
+        style="@style/ToggleButtonBorderlessTextless"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center|bottom"
-        android:layout_marginBottom="@dimen/margin_medium"
+        android:button="@drawable/ic_flashlight_on_off_toggle"
+        android:contentDescription="@string/desc_flashlight"
+        android:minHeight="@dimen/toggle_button_min_size"
+        android:minWidth="@dimen/toggle_button_min_size"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <Button
+        android:id="@+id/start_monitor"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_marginBottom="120dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="start_monitor"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sensitivity_seekbar"
+        app:layout_constraintVertical_bias="1.0"/>
+
+    <ImageButton
+        android:id="@+id/disconnectButtonChild"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="160dp"
+        android:layout_marginRight="160dp"
+        android:layout_marginTop="8dp"
+        android:background="?selectableItemBackgroundBorderless"
+        android:contentDescription="@string/desc_hangup"
+        android:src="@drawable/call_end_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.956"/>
+
+    <SeekBar
+        android:id="@+id/sensitivity_seekbar"
+        android:layout_width="301dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="192dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:max="50"
+        android:progress="25"
+        android:progressDrawable="@drawable/custom_seekbar_layout"
+        android:thumb="@drawable/red_scrubber_control"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.507"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/childRecycler"
+        app:layout_constraintVertical_bias="1.0"/>
+
+    <TextView
+        android:id="@+id/sensitivity_level"
+        android:layout_width="29dp"
+        android:layout_height="30dp"
+
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:gravity="center"
-        android:visibility="gone">
+        android:text="25"
+        app:layout_constraintBottom_toTopOf="@+id/sensitivity_seekbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/flashEnabledToggleChild"/>
 
-        <ToggleButton
-            android:id="@+id/cameraSwitchToggleChild"
-            style="@style/ToggleButtonBorderlessTextless"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/margin_small"
-            android:button="@drawable/switch_camera"
-            android:contentDescription="@string/desc_toggle_cameraSwitch"
-            android:minHeight="@dimen/toggle_button_min_size"
-            android:minWidth="@dimen/toggle_button_min_size"/>
-
-        <ImageButton
-            android:id="@+id/disconnectButtonChild"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/margin_small"
-            android:background="?selectableItemBackgroundBorderless"
-            android:contentDescription="@string/desc_hangup"
-            android:src="@drawable/call_end_button"/>
-
-        <ToggleButton
-            android:id="@+id/flashEnabledToggleChild"
-            style="@style/ToggleButtonBorderlessTextless"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/margin_small"
-            android:button="@drawable/ic_flashlight_on_off_toggle"
-            android:contentDescription="@string/desc_flashlight"
-            android:minHeight="@dimen/toggle_button_min_size"
-            android:minWidth="@dimen/toggle_button_min_size"/>
-    </LinearLayout>
-</android.support.design.widget.CoordinatorLayout>
+</android.support.constraint.ConstraintLayout>

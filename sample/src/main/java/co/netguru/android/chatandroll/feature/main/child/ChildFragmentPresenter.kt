@@ -21,6 +21,7 @@ import io.reactivex.disposables.Disposables
 import io.reactivex.rxkotlin.plusAssign
 import io.reactivex.rxkotlin.subscribeBy
 import org.jetbrains.anko.collections.forEachWithIndex
+import org.webrtc.CameraVideoCapturer
 import org.webrtc.PeerConnection
 import timber.log.Timber
 import javax.inject.Inject
@@ -65,6 +66,20 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
     private var appState = State.NORMAL
+
+
+    val cameraSwitchHandler = object : CameraVideoCapturer.CameraSwitchHandler {
+
+        override fun onCameraSwitchDone(isFront: Boolean) {
+
+            changeCameraToOpposite(isFront)
+            Timber.d("WebRtcServiceController", "camera switched to Front: $isFront")
+        }
+
+        override fun onCameraSwitchError(msg: String?) {
+            Timber.d("WebRtcServiceController", "failed to switch camera " + msg)
+        }
+    }
 
 
     //<editor-fold desc="Fragment (View) Lifecycle Events">

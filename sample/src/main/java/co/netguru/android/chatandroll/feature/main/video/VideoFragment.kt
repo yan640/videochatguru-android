@@ -3,7 +3,9 @@ package co.netguru.android.chatandroll.feature.main.video
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.*
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
@@ -18,7 +20,6 @@ import android.widget.Toast
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
-import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
@@ -504,19 +505,19 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         showSnackbarMessage(R.string.msg_will_try_to_restart_msg, Snackbar.LENGTH_LONG)
     }
 
-    private fun showNoPermissionsSnackbar() {
-        view?.let {
-            Snackbar.make(it, R.string.msg_permissions, Snackbar.LENGTH_LONG)
-                    .setAction(R.string.action_settings) {
-                        try {
-                            context.startAppSettings()
-                        } catch (e: ActivityNotFoundException) {
-                            showSnackbarMessage(R.string.error_permissions_couldnt_start_settings, Snackbar.LENGTH_LONG)
-                        }
-                    }
-                    .show()
-        }
-    }
+//    private fun showNoPermissionsSnackbar() {
+//        view?.let {
+//            Snackbar.make(it, R.string.msg_permissions, Snackbar.LENGTH_LONG)
+//                    .setAction(R.string.action_settings) {
+//                        try {
+//                            context.startAppSettings()
+//                        } catch (e: ActivityNotFoundException) {
+//                            showSnackbarMessage(R.string.error_permissions_couldnt_start_settings, Snackbar.LENGTH_LONG)
+//                        }
+//                    }
+//                    .show()
+//        }
+//    }
 
 
     //</editor-fold>
