@@ -25,7 +25,7 @@
  * @author Astronomical Instrument Group of University of Lethbridge.
  */
 
-package co.netguru.android.chatandroll.feature.main.Services;
+package co.netguru.android.chatandroll.feature.main.services;
 
 public class RealDoubleFFT extends RealDoubleFFT_Mixed{
 

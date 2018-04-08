@@ -1,4 +1,4 @@
-package co.netguru.android.chatandroll.feature.main.Services
+package co.netguru.android.chatandroll.feature.main.services
 
 import android.app.Service
 import android.content.Intent
@@ -101,11 +101,16 @@ class MonitorService : Service() {
 
                 Log.d(TAG, "outside current volume is " + currentVolume + " 89 " + toTransform[89] + " 90 " + toTransform[90] + " 91 " + toTransform[91])
 
+                val intent = Intent("volume_changed")
+                intent.putExtra("currentVolume", currentVolume)
+                intent.putExtra("toTransform[89]", toTransform[89])
+                intent.putExtra("toTransform[90]", toTransform[90])
+                sendBroadcast(intent)
                 if (currentVolume > currentVolumeLimit && toTransform[89] + toTransform[90] + toTransform[91] > sensitivityLimit) {
                     //call number or pass to activity
 
-                    running = false
-                    recording = false
+//                    running = false
+//                    recording = false
 //                    if (null != BabyAlarmActivity.babyAlarmHandler) {
 //                        val msgToActivity = Message()
 //                        msgToActivity.what = 0

@@ -45,7 +45,7 @@
             android:theme="@style/SplashTheme">
 
         </activity>
-        <service android:name="feature$main$Services.MonitorService" />
+        <service android:name=".feature.main.services.MonitorService" />
         <service
             android:name="co.netguru.android.chatandroll.webrtc.service.WebRtcService"
             android:enabled="true"/>

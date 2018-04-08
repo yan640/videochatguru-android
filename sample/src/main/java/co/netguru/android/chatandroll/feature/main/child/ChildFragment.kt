@@ -2,15 +2,13 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ActivityNotFoundException
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
 import android.support.annotation.StringRes
 import android.support.design.widget.Snackbar
+import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import co.netguru.android.chatandroll.R
@@ -19,8 +17,8 @@ import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
-import co.netguru.android.chatandroll.feature.main.Services.MonitorService
 import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
+import co.netguru.android.chatandroll.feature.main.services.MonitorService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_child.*
@@ -29,6 +27,9 @@ import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.support.v4.toast
 import org.webrtc.PeerConnection
 import timber.log.Timber
+
+
+
 
 @SuppressLint("Range")
 class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>(), ChildFragmentView, WebRtcServiceListener {
@@ -56,9 +57,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     private lateinit var serviceConnection: ServiceConnection
 
-
+    private   var volume_changed = "volume_changed"
     override fun getLayoutId() = R.layout.fragment_child
-
+    //private val broadcastReceiver: BroadcastReceiver? = null
 
     var service: WebRtcService? = null
 
@@ -102,6 +103,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         //(buttonPanelChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
        // (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
+        LocalBroadcastManager.getInstance(context)
+                .registerReceiver(broadcastReceiver,   IntentFilter("location_update"))
+
 
         getPresenter().onViewCreated()
         //getPresenter().startChildVideo()
@@ -156,7 +160,12 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
 
+    private val broadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(contxt: Context?, intent: Intent?) {
+            showSnackbarMessage(intent?.getExtras()?.get("currentVolume").toString(), Snackbar.LENGTH_SHORT)
 
+        }
+    }
 
 
 
@@ -166,6 +175,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         checkPermissionsAndConnect()
 
     }
+
+
+
 
     override fun onStop() {
         super.onStop()
