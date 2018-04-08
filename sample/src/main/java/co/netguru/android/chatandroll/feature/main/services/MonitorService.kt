@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
+import java.math.BigDecimal
 
 class MonitorService : Service() {
 
@@ -57,11 +58,26 @@ class MonitorService : Service() {
         }
     }
 
+    fun Double.roundTo2DecimalPlaces() =
+            BigDecimal(this).setScale(4, BigDecimal.ROUND_HALF_UP).toDouble()
+
     override fun onDestroy() {
         super.onDestroy()
         isServiceRunning = false
         Log.d(TAG, "Monitor Service stopped")
     }
+
+
+
+    fun checkDouble(dobl: Double):Boolean {
+        if (dobl.isFinite() && !dobl.isNaN() && !dobl.isInfinite()) return true
+          return false
+
+
+    }
+
+
+
 
     internal inner class RecordThread : Thread() {
 
@@ -78,7 +94,7 @@ class MonitorService : Service() {
             audioRecord.startRecording()
 
             while (recording) {
-                Log.d(TAG, "recording")
+                 Log.d(TAG, "recording")
                 val bufferReadResult = audioRecord.read(buffer, 0, blockSize)
 
                 // Test current loudness
@@ -99,13 +115,13 @@ class MonitorService : Service() {
                 }
                 transformer!!.ft(toTransform)
 
-                Log.d(TAG, "outside current volume is " + currentVolume + " 89 " + toTransform[89] + " 90 " + toTransform[90] + " 91 " + toTransform[91])
-
-                val intent = Intent("volume_changed")
-                intent.putExtra("currentVolume", currentVolume)
-                intent.putExtra("toTransform[89]", toTransform[89])
-                intent.putExtra("toTransform[90]", toTransform[90])
-                sendBroadcast(intent)
+                 Log.d(TAG, "outside current volume is " + currentVolume + " 89 " + toTransform[89] + " 90 " + toTransform[90] + " 91 " + toTransform[91])
+                if (checkDouble(currentVolume) && checkDouble(toTransform[89]) &&checkDouble(toTransform[90]) )
+                {val intent = Intent("volume_changed")
+                intent.putExtra("currentVolume", currentVolume.roundTo2DecimalPlaces())
+                intent.putExtra("toTransform[89]", toTransform[89].roundTo2DecimalPlaces())
+                intent.putExtra("toTransform[90]", toTransform[90].roundTo2DecimalPlaces())
+                sendBroadcast(intent)}
                 if (currentVolume > currentVolumeLimit && toTransform[89] + toTransform[90] + toTransform[91] > sensitivityLimit) {
                     //call number or pass to activity
 

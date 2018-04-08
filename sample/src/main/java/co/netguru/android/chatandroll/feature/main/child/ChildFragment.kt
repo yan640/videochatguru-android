@@ -2,13 +2,15 @@ package co.netguru.android.chatandroll.feature.main.video
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.*
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
 import android.support.annotation.StringRes
 import android.support.design.widget.Snackbar
-import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import co.netguru.android.chatandroll.R
@@ -103,8 +105,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         //(buttonPanelChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
        // (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
-        LocalBroadcastManager.getInstance(context)
-                .registerReceiver(broadcastReceiver,   IntentFilter("location_update"))
+
 
 
         getPresenter().onViewCreated()
@@ -119,7 +120,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 //        }
 
         start_monitor.setOnClickListener{
-
+            service?.enableMicrophone(true)
 
             val intent = Intent(context, MonitorService::class.java)
             intent.putExtra("sensitivity", sensitivity_seekbar.progress )
@@ -149,6 +150,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         }
 
         cameraSwitchToggleChild.setOnCheckedChangeListener { _, enabled ->
+            // service?.enableMicrophone(enabled)
             service?.switchCamera(getPresenter().cameraSwitchHandler)
         }
         childRecycler.layoutManager = LinearLayoutManager(activity.ctx)
@@ -160,12 +162,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
 
-    private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(contxt: Context?, intent: Intent?) {
-            showSnackbarMessage(intent?.getExtras()?.get("currentVolume").toString(), Snackbar.LENGTH_SHORT)
 
-        }
-    }
 
 
 
@@ -174,14 +171,36 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         service?.hideBackgroundWorkWarning()
         checkPermissionsAndConnect()
 
+
+
     }
-
-
+//    var broadcastReceiver = object : BroadcastReceiver() {
+//        override fun onReceive(contxt: Context?, intent: Intent?) {
+//            var text = "Volume  " +intent?.getExtras()?.get("currentVolume").toString() +" 89 "+intent?.getExtras()?.get("toTransform[89]").toString() +" 90 "+ intent?.getExtras()?.get("toTransform[89]").toString()
+//            showSnackbarMessage(text, Snackbar.LENGTH_LONG)
+//
+//        }
+//    }
+//    override fun onResume() {
+//        super.onResume()
+//
+//         context.registerReceiver(broadcastReceiver,   IntentFilter("volume_changed"))
+//    }
 
 
     override fun onStop() {
         super.onStop()
         getPresenter().disconnectChild()
+//        context.unregisterReceiver(broadcastReceiver )
+//
+//
+//
+//
+//
+//            val intent = Intent(context, MonitorService::class.java)
+//            context.stopService(intent)
+//
+
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
@@ -208,6 +227,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     override fun onDestroy() {
         super.onDestroy()
+
         if (!activity.isChangingConfigurations) disconnect()
     }
 
@@ -297,6 +317,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
             }
         }
         startAndBindWebRTCService(serviceConnection)
+
     }
 
 

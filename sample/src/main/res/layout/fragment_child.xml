@@ -31,29 +31,19 @@
         android:id="@+id/childRecycler"
         android:layout_width="0dp"
         android:layout_height="311dp"
+        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginStart="8dp"
         android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="0dp">
-    </android.support.v7.widget.RecyclerView>
-
-    <ImageButton
-        android:id="@+id/switchCameraButtonChild"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/desc_switch_camera"
-        android:padding="@dimen/margin_medium"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_switch_video_white_24dp"/>
+        app:layout_constraintVertical_bias="0.0">
+    </android.support.v7.widget.RecyclerView>
 
 
     <ToggleButton
@@ -81,15 +71,23 @@
         style="@style/ToggleButtonBorderlessTextless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="84dp"
+        android:layout_marginLeft="32dp"
+        android:layout_marginRight="84dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="8dp"
         android:button="@drawable/ic_flashlight_on_off_toggle"
         android:contentDescription="@string/desc_flashlight"
         android:minHeight="@dimen/toggle_button_min_size"
         android:minWidth="@dimen/toggle_button_min_size"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.325"
+        app:layout_constraintStart_toEndOf="@+id/disconnectButtonChild"
+        app:layout_constraintTop_toTopOf="@+id/childRecycler"
+        app:layout_constraintVertical_bias="0.956"/>
 
     <Button
         android:id="@+id/start_monitor"
@@ -102,6 +100,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:text="start_monitor"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.502"
@@ -139,6 +138,7 @@
         android:progress="25"
         android:progressDrawable="@drawable/custom_seekbar_layout"
         android:thumb="@drawable/red_scrubber_control"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.507"
@@ -159,9 +159,31 @@
         android:layout_marginTop="8dp"
         android:gravity="center"
         android:text="25"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/sensitivity_seekbar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/flashEnabledToggleChild"/>
+
+    <ImageButton
+        android:id="@+id/switchCameraButtonChild"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@string/desc_switch_camera"
+        android:padding="@dimen/margin_medium"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/sensitivity_seekbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/disconnectButtonChild"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.639"
+        app:srcCompat="@drawable/ic_switch_video_white_24dp"/>
 
 </android.support.constraint.ConstraintLayout>
