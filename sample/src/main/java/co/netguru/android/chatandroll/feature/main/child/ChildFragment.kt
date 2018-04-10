@@ -146,7 +146,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
         disconnectButtonChild.setOnClickListener {
 
-            //getPresenter().disconnectByUser()
+            getPresenter().disconnectByUser()
             //          getActivity().finish()
            activity.finish()
 //            onDestroy()
@@ -272,7 +272,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     override fun onStop() {
         super.onStop()
-        getPresenter().disconnectChild()
+       // getPresenter().disconnectByUser()
+
 //        context.unregisterReceiver(broadcastReceiver )
 //
 //
@@ -286,10 +287,6 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
         service?.let {
             it.detachViews()
             unbindService()
@@ -297,6 +294,13 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
         getPresenter().onDestroyView()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        childRecycler.adapter = null
+
+
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

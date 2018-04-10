@@ -181,6 +181,7 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         pairingProgeressDialog?.cancel()
         pairingConfirmationDialog?.cancel()
         getPresenter().onDestroyView()
+        devicesRecycler.adapter =null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

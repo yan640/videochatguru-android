@@ -89,7 +89,9 @@ class ChildFragmentPresenter @Inject constructor(
     }
 
     fun onDestroyView() {
-        firebaseChild.disconnect()
+        if (!listOfChildren.isEmpty()) disconnectChild()
+
+        // firebaseChild.disconnect()
         onDestroyDestroedDisposables.clear()
 
         checkChildFolderDisposable.dispose()
@@ -103,7 +105,7 @@ class ChildFragmentPresenter @Inject constructor(
 
     override fun detachView() {
         super.detachView()
-        firebaseChild.disconnect()
+        //firebaseChild.disconnect()
         checkChildFolderDisposable.dispose()
 
     }
@@ -334,7 +336,7 @@ class ChildFragmentPresenter @Inject constructor(
                         onNext = {
                             Timber.d("Disconnect order")
                             getView()?.showOtherPartyFinished()
-                            disconnect()
+                            disconnectChild()
                         }
                 )
     }
@@ -351,18 +353,22 @@ class ChildFragmentPresenter @Inject constructor(
                             getView()?.disconnect()
 
 
-                            getView()?.showStartRouletteView()
+                           // getView()?.showStartRouletteView()
                         }
                 )
 
     }
 
     fun disconnectChild() {
+
         childPicked?.run {
             phoneUuid = App.THIS_DEVICE_UUID
             phoneModel = App.THIS_DEVICE_MODEL
             online = true
             onDestroyDestroedDisposables += firebaseChild.setChildOffline(this)
+    //                .andThen(firebaseSignalingDisconnect.sendDisconnectOrderToOtherParty(remoteUuid!!))
+//                    .andThen( if (remoteUuid != null) firebaseSignalingDisconnect.sendDisconnectOrderToOtherParty(remoteUuid)
+//                    else Completable.complete() )
                     .compose(RxUtils.applyCompletableIoSchedulers())
                     .subscribeBy(
                             onError = {
@@ -370,11 +376,13 @@ class ChildFragmentPresenter @Inject constructor(
                                 //    onDestroyView()
                             },
                             onComplete = {
-                                disconnectOrdersSubscription.dispose()
+                                listOfChildren.clear()
+                                 childrenKey = ""
+                                  childrensSize = 0
+                                disconnect()
+                                // disconnectOrdersSubscription.dispose()
                                 // onDestroyView()
 //                            getView()?.disconnect()
-//
-//
 //                            getView()?.showStartRouletteView()
                             }
                     )
@@ -397,11 +405,11 @@ class ChildFragmentPresenter @Inject constructor(
                     .compose(RxUtils.applyCompletableIoSchedulers())
                     .subscribeBy(
                             onComplete = {
-                                disconnect()
+                                disconnectChild()
                             }
                     )
         } else {
-            disconnect()
+            disconnectChild()
         }
 
     }
