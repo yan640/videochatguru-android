@@ -8,27 +8,29 @@ import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.data.model.Child
 import kotlinx.android.synthetic.main.item_paired_device.view.*
 
-class ChildAdapter(val childrens: List<Child>,
-                   val clickListener: (Child) -> Unit) :
+class ChildAdapter(private val children: List<Child>,
+                   private val clickListener: (Child) -> Unit) :
         RecyclerView.Adapter<ChildAdapter.ChildViewHolder>() {
-    private var mObjects: List<Child> = childrens
+    private var mObjects: List<Child> = children
 
     init {
-        mObjects = childrens
+        mObjects = children
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ChildViewHolder {
         val view = LayoutInflater
                 .from(parent?.context)
                 .inflate(R.layout.item_child, parent, false)
-        return ChildViewHolder(view, clickListener)
+        return ChildViewHolder(view
+            //    , clickListener
+        )
     }
 
-    override fun getItemCount() = childrens.size
+    override fun getItemCount() = children.size
 
     override fun onBindViewHolder(holder: ChildViewHolder?, position: Int) {
-        holder?.bindDevice(childrens[position])
-        var item: Child = childrens[position]
+        holder?.bindDevice(children[position])
+        var item: Child = children[position]
 
         // Calling the clickListener sent by the constructor
         holder?.view?.setOnClickListener {
@@ -36,8 +38,9 @@ class ChildAdapter(val childrens: List<Child>,
         }
     }
 
-    class ChildViewHolder(val view: View,
-                          private val clickListener: (Child) -> Unit)
+    class ChildViewHolder(val view: View
+                          //,private val clickListener: (Child) -> Unit
+    )
         : RecyclerView.ViewHolder(view) {
 
         fun bindDevice(child: Child) = with(child) {

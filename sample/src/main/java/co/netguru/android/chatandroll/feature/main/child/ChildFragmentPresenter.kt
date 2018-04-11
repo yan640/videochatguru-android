@@ -44,7 +44,7 @@ class ChildFragmentPresenter @Inject constructor(
 
     private var disconnectOrdersSubscription: Disposable = Disposables.disposed()
 
-    private val app: App by lazy { App.get(appContext) }
+
 
     private val listOfChildren = mutableListOf<Child>()
     private var childrenKey = ""
@@ -60,12 +60,7 @@ class ChildFragmentPresenter @Inject constructor(
      * но отменило сопряжение. При этом оно должно удалено из paired
      */
 
-    enum class State {
-        PAIRING,
-        NORMAL
-    }
 
-    private var appState = State.NORMAL
 
 
     val cameraSwitchHandler = object : CameraVideoCapturer.CameraSwitchHandler {
@@ -114,18 +109,7 @@ class ChildFragmentPresenter @Inject constructor(
     override fun attachView(mvpView: ChildFragmentView) {
         super.attachView(mvpView)
     }
-    //</editor-fold>
 
-
-    //<editor-fold desc="Pairing">
-
-
-
-
-    //</editor-fold>
-
-
-    //<editor-fold desc="After pairing">
     private fun checkChildFolderForEmpty() {
         checkChildFolderDisposable =firebaseChild.connect()
                 .andThen(firebaseChild.listenChildFolder(App.CURRENT_ROOM_ID))
