@@ -38,16 +38,19 @@ android {
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':videochatguru')
     compile  "org.jetbrains.anko:anko:0.10.4"
-    compile 'org.jetbrains.kotlin:kotlin-stdlib:1.2.21'
-    compile "com.android.support:cardview-v7:26.0.1"
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:1.2.31'
+    compile libs.cardView
+
+  compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile "android.arch.lifecycle:extensions:1.1.0"
+    compile "android.arch.lifecycle:reactivestreams:1.1.0"
     compile libs.appCompat
     compile libs.design
 
