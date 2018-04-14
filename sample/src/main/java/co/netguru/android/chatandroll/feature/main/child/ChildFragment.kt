@@ -5,9 +5,10 @@ package co.netguru.android.chatandroll.feature.main.video
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ComponentName
-import android.content.Intent
 import android.content.ServiceConnection
 import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.audiofx.Visualizer
 import android.os.Bundle
 import android.os.IBinder
 import android.support.annotation.StringRes
@@ -20,7 +21,6 @@ import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
 import co.netguru.android.chatandroll.data.model.Child
 import co.netguru.android.chatandroll.feature.base.BaseMvpFragment
 import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
-import co.netguru.android.chatandroll.feature.main.services.MonitorService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_child.*
@@ -57,6 +57,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
     private lateinit var serviceConnection: ServiceConnection
 
+    private    val   mediaPlayer :   MediaPlayer? = null
+    private    val   visualizer :   Visualizer? = null
 
     override fun getLayoutId() = R.layout.fragment_child
 
@@ -113,14 +115,18 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
         start_monitor.setOnClickListener{
-            service?.enableMicrophone(true)
 
-            val intent = Intent(context, MonitorService::class.java)
-            intent.putExtra("sensitivity", sensitivity_seekbar.progress )
+            val audioID = mediaPlayer?.audioSessionId
+            sensitivity_level.setText(audioID!!)
 
-            if (context != null) {
-                context.startService(intent)
-            }
+//            service?.enableMicrophone(true)
+//
+//            val intent = Intent(context, MonitorService::class.java)
+//            intent.putExtra("sensitivity", sensitivity_seekbar.progress )
+//
+//            if (context != null) {
+//                context.startService(intent)
+//            }
         }
 
         disconnectButtonChild.setOnClickListener {

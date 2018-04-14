@@ -93,20 +93,20 @@
         android:id="@+id/start_monitor"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
-        android:layout_marginBottom="120dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginBottom="566dp"
+        android:layout_marginEnd="190dp"
+        android:layout_marginLeft="384dp"
+        android:layout_marginRight="190dp"
+        android:layout_marginStart="384dp"
+        android:layout_marginTop="567dp"
         android:text="start_monitor"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintHorizontal_bias="0.471"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sensitivity_seekbar"
-        app:layout_constraintVertical_bias="1.0"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.28"/>
 
     <ImageButton
         android:id="@+id/disconnectButtonChild"
@@ -148,23 +148,22 @@
 
     <TextView
         android:id="@+id/sensitivity_level"
-        android:layout_width="29dp"
-        android:layout_height="30dp"
+        android:layout_width="83dp"
+        android:layout_height="54dp"
 
         android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="44dp"
         android:gravity="center"
-        android:text="25"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/sensitivity_seekbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/flashEnabledToggleChild"/>
-
+        android:text="."
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="parent"
+        app:layout_constraintHorizontal_bias="0.341"
+        app:layout_constraintStart_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.761"/>
 
 
 </android.support.constraint.ConstraintLayout>
