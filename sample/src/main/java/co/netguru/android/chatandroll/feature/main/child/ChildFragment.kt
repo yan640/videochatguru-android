@@ -8,6 +8,8 @@ import android.content.ComponentName
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.audiofx.Visualizer
 import android.os.Bundle
 import android.os.IBinder
 import android.support.annotation.StringRes
@@ -54,11 +56,12 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                 Manifest.permission.ACCESS_NETWORK_STATE,
                 Manifest.permission.ACCESS_WIFI_STATE,
                 Manifest.permission.BLUETOOTH,
-                Manifest.permission.GET_ACCOUNTS)
+                Manifest.permission.GET_ACCOUNTS,
+                Manifest.permission.MODIFY_AUDIO_SETTINGS)
 
     }
     private var visualizerManager: NierVisualizerManager? = null
-
+    private var visualizer :  Visualizer? = null
     private lateinit var serviceConnection: ServiceConnection
 
   //  private    val   mediaPlayer :   MediaPlayer= MediaPlayer.create(context,0)
@@ -93,7 +96,8 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                     Manifest.permission.ACCESS_NETWORK_STATE,
                     Manifest.permission.ACCESS_WIFI_STATE,
                     Manifest.permission.BLUETOOTH,
-                    Manifest.permission.GET_ACCOUNTS
+                    Manifest.permission.GET_ACCOUNTS,
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS
 
             ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
         }
@@ -114,6 +118,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                     showSnackbarMessage("Please enable AUDIO RECORD permission!", Snackbar.LENGTH_LONG)
 
                 } else {
+//                    visualizer = Visualizer(0)
+
+
                     visualizerManager = NierVisualizerManager()
                     visualizerManager?.init(0)
                     //useStyle(++mCurrentStyleIndex)
@@ -128,15 +135,19 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         //(buttonPanelChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
        // (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
-
+//            var dsf = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION).toString()
+//        var dssf = PackageManager.PERMISSION_GRANTED
+//        sensitivity_level.setText(dsf+dssf)
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(activity,
                     arrayOf(Manifest.permission.RECORD_AUDIO),
                     REQUEST_CODE_PERMISSION_AUDIO_FOR_INIT)
         } else {
+//            visualizer = Visualizer(0)
+//            var dssf = visualizer.toString()
             visualizerManager = NierVisualizerManager()
-            visualizerManager?.init(0)
+            visualizerManager?.init(1)
         }
 
 
@@ -148,9 +159,14 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
 
         start_monitor.setOnClickListener{
+            var audioManager : AudioManager
+            //var dsfsdf = audioManager.generateAudioSessionId()
+//            var audioRecord : AudioRecord.Builder
+//            var dsfssddf = audioRecord.audioSessionId
+            var mediaPlayer : MediaPlayer = MediaPlayer()
+            var dsfssddf = mediaPlayer.audioSessionId
 
-
-            visualizerManager?.start(surfaceView, arrayOf(ColumnarType1Renderer()))
+                    visualizerManager?.start(surfaceView, arrayOf(ColumnarType1Renderer()))
             //val audioI2D = mediaPlayer.
 //                val   visualizer :   Visualizer  = Visualizer(0)
 //            val audioID = visualizer.samplingRate//mediaPlayer.audioSessionId

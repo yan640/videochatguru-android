@@ -58,7 +58,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                 Manifest.permission.ACCESS_NETWORK_STATE,
                 Manifest.permission.ACCESS_WIFI_STATE,
                 Manifest.permission.BLUETOOTH,
-                Manifest.permission.GET_ACCOUNTS)
+                Manifest.permission.GET_ACCOUNTS,
+                Manifest.permission.MODIFY_AUDIO_SETTINGS)
         private const val CONNECT_BUTTON_ANIMATION_DURATION_MS = 500L
     }
 
@@ -105,7 +106,8 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
                     Manifest.permission.ACCESS_NETWORK_STATE,
                     Manifest.permission.ACCESS_WIFI_STATE,
                     Manifest.permission.BLUETOOTH,
-                    Manifest.permission.GET_ACCOUNTS
+                    Manifest.permission.GET_ACCOUNTS,
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS
 
             ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
         }
