@@ -6,13 +6,14 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.audiofx.Visualizer
 import android.os.Bundle
 import android.os.IBinder
 import android.support.annotation.StringRes
 import android.support.design.widget.Snackbar
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import co.netguru.android.chatandroll.R
@@ -24,6 +25,8 @@ import co.netguru.android.chatandroll.feature.main.child.ChildAdapter
 import co.netguru.android.chatandroll.webrtc.service.WebRtcService
 import co.netguru.android.chatandroll.webrtc.service.WebRtcServiceListener
 import kotlinx.android.synthetic.main.fragment_child.*
+import me.bogerchan.niervisualizer.NierVisualizerManager
+import me.bogerchan.niervisualizer.renderer.columnar.ColumnarType1Renderer
 import org.jetbrains.anko.*
 import org.jetbrains.anko.support.v4.alert
 import org.jetbrains.anko.support.v4.toast
@@ -41,6 +44,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
         private const val KEY_IN_CHAT = "key:in_chat"
         private const val CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE = 1
+        private const val REQUEST_CODE_PERMISSION_AUDIO_FOR_INIT = 61
         private val NECESSARY_PERMISSIONS = arrayOf(
                 Manifest.permission.CAMERA,
                 Manifest.permission.RECORD_AUDIO,
@@ -53,12 +57,12 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
                 Manifest.permission.GET_ACCOUNTS)
 
     }
-
+    private var visualizerManager: NierVisualizerManager? = null
 
     private lateinit var serviceConnection: ServiceConnection
 
-    private    val   mediaPlayer :   MediaPlayer? = null
-    private    val   visualizer :   Visualizer? = null
+  //  private    val   mediaPlayer :   MediaPlayer= MediaPlayer.create(context,0)
+
 
     override fun getLayoutId() = R.layout.fragment_child
 
@@ -81,7 +85,9 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         if (context.areAllPermissionsGranted(*NECESSARY_PERMISSIONS)) {
 
         } else {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WAKE_LOCK,
+            requestPermissions(arrayOf(Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.WAKE_LOCK,
                     Manifest.permission.KILL_BACKGROUND_PROCESSES,
                     Manifest.permission.SEND_SMS,
                     Manifest.permission.ACCESS_NETWORK_STATE,
@@ -97,7 +103,25 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
         getPresenter().connectionStateChange(iceConnectionState)
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (permissions.isEmpty()) {
+            return
+        }
+        when (requestCode) {
+            REQUEST_CODE_PERMISSION_AUDIO_FOR_INIT -> {
+                if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    showSnackbarMessage("Please enable AUDIO RECORD permission!", Snackbar.LENGTH_LONG)
 
+                } else {
+                    visualizerManager = NierVisualizerManager()
+                    visualizerManager?.init(0)
+                    //useStyle(++mCurrentStyleIndex)
+                }
+            }
+
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -105,6 +129,15 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
        // (localVideoViewChild.layoutParams as CoordinatorLayout.LayoutParams).behavior = MoveUpBehavior()
         activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
 
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(activity,
+                    arrayOf(Manifest.permission.RECORD_AUDIO),
+                    REQUEST_CODE_PERMISSION_AUDIO_FOR_INIT)
+        } else {
+            visualizerManager = NierVisualizerManager()
+            visualizerManager?.init(0)
+        }
 
 
         getPresenter().onViewCreated()
@@ -116,8 +149,12 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
 
         start_monitor.setOnClickListener{
 
-            val audioID = mediaPlayer?.audioSessionId
-            sensitivity_level.setText(audioID!!)
+
+            visualizerManager?.start(surfaceView, arrayOf(ColumnarType1Renderer()))
+            //val audioI2D = mediaPlayer.
+//                val   visualizer :   Visualizer  = Visualizer(0)
+//            val audioID = visualizer.samplingRate//mediaPlayer.audioSessionId
+//            sensitivity_level.setText(audioID)
 
 //            service?.enableMicrophone(true)
 //
@@ -160,7 +197,7 @@ class ChildFragment : BaseMvpFragment<ChildFragmentView, ChildFragmentPresenter>
     override fun onStop() {
         super.onStop()
 
-
+        visualizerManager?.stop()
         if (!activity.isChangingConfigurations) {
             service?.showBackgroundWorkWarning()
         }

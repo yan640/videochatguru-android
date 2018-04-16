@@ -1,6 +1,6 @@
 ext {
     // Versions
-    supportLibraryVersion = '26.0.1'
+    supportLibraryVersion = '26.1.0'
     daggerVersion = '2.10'
     leakCanary = '1.5.1'
     firebaseVersion = '11.2.0'

@@ -3,9 +3,11 @@ package co.netguru.android.chatandroll.feature.main.video
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
@@ -20,6 +22,7 @@ import android.widget.Toast
 import co.netguru.android.chatandroll.R
 import co.netguru.android.chatandroll.app.App
 import co.netguru.android.chatandroll.common.extension.areAllPermissionsGranted
+import co.netguru.android.chatandroll.common.extension.startAppSettings
 import co.netguru.android.chatandroll.data.SharedPreferences.SharedPreferences
 import co.netguru.android.chatandroll.data.model.PairedDevice
 import co.netguru.android.chatandroll.data.model.PairingDevice
@@ -94,7 +97,9 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
         if (context.areAllPermissionsGranted(*NECESSARY_PERMISSIONS)) {
 
         } else {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WAKE_LOCK,
+            requestPermissions(arrayOf(Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.WAKE_LOCK,
                     Manifest.permission.KILL_BACKGROUND_PROCESSES,
                     Manifest.permission.SEND_SMS,
                     Manifest.permission.ACCESS_NETWORK_STATE,
@@ -105,7 +110,33 @@ class VideoFragment : BaseMvpFragment<VideoFragmentView, VideoFragmentPresenter>
             ), CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE)
         }
     }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) = when (requestCode) {
+        CHECK_PERMISSIONS_AND_CONNECT_REQUEST_CODE -> {
+            val grantResult = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (grantResult) {
+                checkPermissionsAndConnect()
+            } else {
+                showNoPermissionsSnackbar()
+            }
+        }
+        else -> {
+            error("Unknown permission request code $requestCode")
+        }
+    }
 
+    private fun showNoPermissionsSnackbar() {
+        view?.let {
+            Snackbar.make(it, R.string.msg_permissions, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.action_settings) {
+                        try {
+                            context.startAppSettings()
+                        } catch (e: ActivityNotFoundException) {
+                            showSnackbarMessage(R.string.error_permissions_couldnt_start_settings, Snackbar.LENGTH_LONG)
+                        }
+                    }
+                    .show()
+        }
+    }
     override fun connectionStateChange(iceConnectionState: PeerConnection.IceConnectionState) {
         getPresenter().connectionStateChange(iceConnectionState)
     }

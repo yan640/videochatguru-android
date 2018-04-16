@@ -49,7 +49,7 @@ dependencies {
     compile "com.android.support:cardview-v7:27.1.0"
     compile libs.appCompat
     compile libs.design
-
+    compile 'com.github.bogerchan:Nier-Visualizer:v0.0.2'
 
     compile libs.dagger
     kapt proc.dagger
